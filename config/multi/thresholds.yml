@@ -1,0 +1,103 @@
+# =============================================================================
+# Phase 12 -- thresholds for composed (multi-condition) queries
+# =============================================================================
+# RULE: this application never invents a threshold. "high NDVI" with no number
+# is REFUSED (NEEDS_THRESHOLD) unless the user has explicitly enabled one of the
+# conventions below in the UI. Every threshold that reaches a result carries a
+# provenance string saying where it came from.
+#
+# The three provenances, in order of trustworthiness:
+#   1. user_specified     -- "NDVI > 0.6" typed by the user. Always available.
+#   2. config_convention  -- one of the entries below, ONLY when enabled in the
+#                            UI. Labelled as a display/query convention, never
+#                            as a scientific classification.
+#   3. relative           -- "above the median of the selected area". Computed
+#                            from the ROI itself and always worded as RELATIVE
+#                            TO THAT ROI -- never as a land-cover or water rule.
+# =============================================================================
+
+version: "phase12"
+
+# What happens when no threshold is given. Do not change this to a number:
+# that would be the system inventing a threshold.
+default_policy: require_explicit_threshold
+
+# -----------------------------------------------------------------------------
+# OPTIONAL display/query conventions -- applied only when enabled by the user
+# -----------------------------------------------------------------------------
+conventions:
+  ndvi_high:
+    index: ndvi
+    operator: ">"
+    value: 0.6
+    words: ["high", "dense", "strong", "healthy"]
+    label: "high NDVI"
+    note: >-
+      Display/query convention, not a validated agronomic threshold. Chosen
+      because it sits well above the crop/water boundary in the bundled
+      Sentinel-2 sample; it carries no causal or land-cover meaning.
+  ndvi_low:
+    index: ndvi
+    operator: "<"
+    value: 0.2
+    words: ["low", "sparse", "weak", "poor"]
+    label: "low NDVI"
+    note: >-
+      Display/query convention, not a validated agronomic threshold.
+  ndwi_high:
+    index: ndwi
+    operator: ">"
+    value: 0.2
+    words: ["high"]
+    label: "high NDWI"
+    note: >-
+      Display/query convention. A high NDWI is consistent with water-like
+      spectral response; it is NOT a water map, a flood extent or a water
+      quality measurement.
+  ndwi_low:
+    index: ndwi
+    operator: "<"
+    value: -0.4
+    words: ["low"]
+    label: "low NDWI"
+    note: >-
+      Display/query convention. A low NDWI is consistent with a non-water
+      spectral response; it does not prove the absence of water.
+
+# -----------------------------------------------------------------------------
+# Relative thresholds -- computed from the selected area, never absolute
+# -----------------------------------------------------------------------------
+relative:
+  allowed: ["median", "p25", "p75"]
+  default: "median"
+  note: >-
+    A relative threshold is derived from the pixels of the SELECTED AREA only
+    (for example "NDVI above the median of this area"). It must always be
+    reported as relative to that area, and must never be worded as a land-cover
+    or water classification.
+
+# Sanity bounds for any threshold, from the index definitions themselves.
+bounds:
+  ndvi: [-1.0, 1.0]
+  ndwi: [-1.0, 1.0]
+
+# -----------------------------------------------------------------------------
+# Wording
+# -----------------------------------------------------------------------------
+caveat: >-
+  A combined condition is geographic evidence, not causal attribution.
+
+limitations:
+  - "A combined condition is geographic evidence, not causal attribution."
+  - "NDVI decrease together with water proximity does not establish flooding."
+  - "NDVI decrease together with a high NDWI does not establish flooding."
+  - "A low NDVI together with a high NDWI does not classify an area as water."
+  - "NDVI decrease does not establish crop failure, drought, deforestation or damage."
+  - "NDWI does not establish water availability, water quality or flood extent."
+  - "Thresholds are user-specified or explicitly labelled conventions; none of
+     them is a validated scientific classification."
+  - "Unknown cells are never counted as matches or as non-matches."
+  - "Conditions are combined only after CRS, transform, shape and cell size have
+     been verified identical; grids are never silently resampled."
+  - "Land cover is the ESA WorldCover 2021 epoch; it is not a statement about
+     the current season or year."

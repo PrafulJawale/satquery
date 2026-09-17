@@ -1,0 +1,79 @@
+# =============================================================================
+# Phase 11 -- NDVI definition (the REFERENCE index)
+# =============================================================================
+# This file restates, verbatim, the constants that have lived in core/indices.py
+# since Phase 3. It is the reference case for the index abstraction: every
+# field below must reproduce the historical NDVI behaviour EXACTLY, and
+# tests/test_phase11_ndwi.py::test_ndvi_delegates_with_identical_output proves
+# that compute_ndvi() and compute_index(NDVI, ...) are indistinguishable.
+#
+# Nothing here is a new scientific decision -- NDVI semantics are frozen.
+# =============================================================================
+
+version: "phase11"
+
+name: ndvi
+short_name: "NDVI"
+display_name: "NDVI"
+label: "NDVI (Normalised Difference Vegetation Index)"
+
+# kind = how the value is formed from the two roles.
+#   normalized_difference -> (numerator - denominator) / (numerator + denominator)
+#   custom                -> reserved for SAVI / EVI-style formulae (future phase)
+kind: normalized_difference
+
+numerator_role: nir            # NIR - Red
+denominator_role: red          # NIR + Red
+required_roles: [red, nir]     # also the order used in `bands_used`
+
+# Human labels per role, used in error messages ("Red and NIR bands must be...")
+role_labels:
+  red: "Red"
+  nir: "NIR"
+
+# Which physical band carries each role, per sensor. Band ROLE resolution is
+# done by core.bands.guess_band_roles() from raster metadata -- this table only
+# records the documented mapping for provenance.
+sensor_bands:
+  sentinel-2-l2a:
+    red: "B04"
+    nir: "B08"
+  landsat-c2-l2:
+    red: "B4"
+    nir: "B5"
+
+wavelengths_nm:
+  red: 665
+  nir: 842
+
+formula: "(NIR - Red) / (NIR + Red)"
+citation: "Rouse et al. 1974; Tucker 1979"
+
+# Denominator guard: |NIR + Red| below this is UNDEFINED, not zero. Inherited
+# from the Phase 3 convention -- deliberately NOT changed by Phase 11.
+min_denominator: 1.0e-6
+
+value_range: [-1.0, 1.0]
+colormap: "RdYlGn"
+
+# Reflectance convention for the bundled Sentinel-2 L2A samples
+# (BOA_ADD_OFFSET verified as 0 for this processing baseline -- see PHASE2.md).
+reflectance:
+  scale: 0.0001
+  offset: 0.0
+
+description: >-
+  A normalised ratio of near-infrared and red surface reflectance. Dense,
+  photosynthetically active vegetation reflects NIR strongly while absorbing red
+  light, giving high positive values; water absorbs NIR and gives negative values.
+
+# Shown with every NDVI result (Phase 3 wording, unchanged).
+caveat: >-
+  This is a measurement of the selected pixels only -- an observed NDVI value,
+  not a crop-health, yield or disease diagnosis.
+
+limitations:
+  - "NDVI is a spectral index, not a measurement of crop health, yield or disease."
+  - "NDVI saturates in dense vegetation and is sensitive to soil background."
+  - "Values outside [-1, 1] indicate a scaling, band-mapping or cloud problem."
+  - "No atmospheric correction is applied beyond the source product's processing."

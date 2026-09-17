@@ -1,0 +1,65 @@
+# SatQuery AI -- runtime dependencies.
+#
+#     pip install -r requirements.txt
+#
+# NOTE ON rasterio: the PyPI wheels bundle GDAL, so `pip install rasterio`
+# works out of the box on Linux/macOS/Windows. If you need extra GDAL format
+# drivers (e.g. JP2OpenJPEG for Sentinel-2 .jp2 files), use conda-forge:
+#     conda install -c conda-forge rasterio
+#
+# Versions are lower bounds; the application is developed and tested on the
+# versions pinned by `pip install -r requirements.txt` at the time of release.
+
+# ---------------------------------------------------------------------------
+# GeoTIFF / COG ingestion
+# ---------------------------------------------------------------------------
+rasterio>=1.4
+numpy>=1.26
+
+# ---------------------------------------------------------------------------
+# Application shell
+# ---------------------------------------------------------------------------
+streamlit>=1.50   # >=1.50 required: st.image / st.button use width="stretch"
+
+rasterio>=1.4
+numpy>=1.26
+
+# Phase 1 -- UI shell
+streamlit>=1.50   # >=1.50 required: st.image/st.dataframe use width="stretch"
+
+# ---------------------------------------------------------------------------
+# RGB / false-colour preview
+# ---------------------------------------------------------------------------
+matplotlib>=3.8
+pillow>=10
+
+# ---------------------------------------------------------------------------
+# interactive map, ROI drawing, geometry
+# ---------------------------------------------------------------------------
+folium>=0.16
+streamlit-folium>=0.20
+pyproj>=3.6          # datum transforms (EPSG:32636 -> 4326), geodesic areas
+shapely>=2.0         # raster footprint polygon, ROI masks, GeoJSON output
+scipy>=1.11          # exact Euclidean distance transform (proximity masks)
+                     #   (declared explicitly: scipy is NOT a mandatory dependency of
+                     #   any other requirement, only an optional extra of unrelated ones)
+# NOTE: geopandas is deliberately NOT required. Everything here that
+# would normally reach for geopandas (footprint polygon -> GeoJSON, area,
+# containment) is done here with shapely + pyproj, which are already
+# dependencies of rasterio. Add geopandas only when you need vector overlays
+# (administrative boundaries, soil/land-use polygons) -- see the optional
+# block below.
+
+# ---------------------------------------------------------------------------
+# Optional
+# ---------------------------------------------------------------------------
+# geopandas>=0.14        # vector overlays, GeoJSON export
+# rasterstats>=0.19        # zonal statistics alternative
+# pystac-client>=0.8       # remote catalogue search
+# planetary-computer>=1.0  # Microsoft Planetary Computer asset signing
+# scikit-image>=0.22       # Otsu thresholding for change detection
+
+# ---------------------------------------------------------------------------
+# Tooling
+# ---------------------------------------------------------------------------
+pytest>=8

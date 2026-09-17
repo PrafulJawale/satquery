@@ -1,0 +1,147 @@
+{
+  "_comment": "Provenance for every bundled sample. If you add a file here you MUST fill these fields. 'bands_are_physically_valid' = false means: do NOT compute NDVI/NDWI from it and present the result as vegetation/water measurement.",
+  "samples": {
+    "RGB.byte.tif": {
+      "name": "Landsat-derived 8-bit RGB subset (rasterio test fixture)",
+      "source_url": "https://github.com/rasterio/rasterio/blob/main/tests/data/RGB.byte.tif",
+      "what_it_is": "A 3-band 8-bit GeoTIFF (~300 m pixels, EPSG:32618) distributed as test data with the rasterio project. It is real satellite imagery, but the upstream acquisition date/sensor is not documented in the file itself.",
+      "is_real_satellite_data": true,
+      "bands_are_physically_valid": false,
+      "good_for": [
+        "metadata",
+        "ingestion tests",
+        "rgb_preview",
+        "map overlay"
+      ],
+      "not_good_for": [
+        "ndvi",
+        "ndwi",
+        "any spectral index"
+      ],
+      "notes": "8-bit display-scaled values; the red band here is a visible-red band, NOT a red-edge or NIR band. Use it to prove the pipeline runs, never to prove an NDVI value."
+    },
+    "all-nodata.tif": {
+      "name": "4-band uint16 surface-reflectance-style scene, entirely nodata",
+      "source_url": "https://github.com/rasterio/rasterio/blob/main/tests/data/all-nodata.tif",
+      "what_it_is": "71 x 2475 px, 4 bands (blue, green, red, nir), uint16, 3 m pixels, EPSG:32628. GDAL metadata shows a 6S atmospheric-correction record dated 2022-01-17. Every pixel is nodata (=0).",
+      "is_real_satellite_data": true,
+      "bands_are_physically_valid": true,
+      "good_for": [
+        "metadata",
+        "band naming",
+        "nodata handling tests",
+        "edge cases"
+      ],
+      "not_good_for": [
+        "ndvi (no valid pixels)"
+      ],
+      "notes": "This is our regression test for 'statistics must not silently count nodata pixels'. Any stat computed on it must report 0 valid pixels, not a mean of 0.0."
+    },
+    "byte.tif": {
+      "name": "Single-band 8-bit raster, EPSG:26711 (NAD27 / UTM 11N)",
+      "source_url": "https://github.com/rasterio/rasterio/blob/main/tests/data/byte.tif",
+      "what_it_is": "20 x 20 px, 1 band, uint8, 60 m pixels, no nodata declared. A classic rasterio test fixture.",
+      "is_real_satellite_data": true,
+      "bands_are_physically_valid": false,
+      "good_for": [
+        "metadata",
+        "single-band handling",
+        "datum tests (NAD27)"
+      ],
+      "not_good_for": [
+        "ndvi",
+        "rgb_preview"
+      ],
+      "notes": "Useful because its CRS is NAD27 (EPSG:26711) -- it proves we really transform datums instead of assuming everything is WGS84."
+    },
+    "rotated.tif": {
+      "name": "Rotated (non-north-up) raster, no CRS",
+      "source_url": "https://github.com/rasterio/rasterio/blob/main/tests/data/rotated.tif",
+      "what_it_is": "10 x 15 px, 1 band, uint8. Affine transform has non-zero rotation terms (b, d) and the file has NO CRS.",
+      "is_real_satellite_data": false,
+      "bands_are_physically_valid": false,
+      "good_for": [
+        "edge cases",
+        "rotation detection",
+        "missing-CRS detection"
+      ],
+      "not_good_for": [
+        "map overlay",
+        "statistics"
+      ],
+      "notes": "SYNTHETIC TEST FIXTURE, not satellite imagery. Exists to prove the app degrades gracefully instead of drawing a wrong footprint."
+    },
+    "float_nan.tif": {
+      "name": "3x2 float32 raster with NaN nodata and no CRS",
+      "source_url": "https://github.com/rasterio/rasterio/blob/main/tests/data/float_nan.tif",
+      "what_it_is": "3 x 2 px, 1 band, float32, nodata = NaN, no CRS, suspicious Y resolution.",
+      "is_real_satellite_data": false,
+      "bands_are_physically_valid": false,
+      "good_for": [
+        "edge cases",
+        "NaN nodata handling"
+      ],
+      "not_good_for": [
+        "map overlay",
+        "statistics"
+      ],
+      "notes": "SYNTHETIC TEST FIXTURE. Guards against NaN-vs-nodata confusion, which will matter a lot when we divide by (NIR + Red) in Phase 3."
+    },
+    "rgb1_fake_nir_epsg3857.tif": {
+      "name": "8-bit raster in EPSG:3857 (name is misleading)",
+      "source_url": "https://github.com/rasterio/rasterio/blob/main/tests/data/rgb1_fake_nir_epsg3857.tif",
+      "what_it_is": "676 x 681 px, 1 band, uint8, ~200 m pixels in EPSG:3857 Web Mercator. Despite the filename, this file ships with ONE band upstream, so it provides no real NIR.",
+      "is_real_satellite_data": false,
+      "bands_are_physically_valid": false,
+      "good_for": [
+        "edge cases",
+        "EPSG:3857 handling",
+        "metadata display"
+      ],
+      "not_good_for": [
+        "ndvi",
+        "rgb_preview"
+      ],
+      "notes": "Kept deliberately: it is a live reminder never to trust filenames or band counts as evidence of band meaning."
+    },
+    "s2_s2b-36ruv-20230806-0-l2a_2048px.tif": {
+      "name": "Sentinel-2 L2A MGRS-36RUV window (2023-08-06)",
+      "filename": "s2_s2b-36ruv-20230806-0-l2a_2048px.tif",
+      "source_url": "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2B_36RUV_20230806_0_L2A",
+      "what_it_is": "Real Copernicus Sentinel-2 MSI Level-2A surface-reflectance window: 2048x2048 px at 10 m (20.5 km), 4 bands (B02 blue, B03 green, B04 red, B08 nir), uint16 DN, EPSG:32636, nodata=0. Extracted from the AWS Open Data COG archive.",
+      "is_real_satellite_data": true,
+      "bands_are_physically_valid": true,
+      "good_for": [
+        "metadata",
+        "rgb_preview",
+        "false_colour_composite",
+        "ndvi",
+        "ndwi",
+        "map overlay"
+      ],
+      "not_good_for": [
+        "change detection (only one date is bundled)"
+      ],
+      "notes": "Reflectance = DN/10000. The STAC raster:bands metadata advertises offset -0.1, but applying it makes ~98% of pixels negative, so BOA_ADD_OFFSET is 0 for this baseline (verified empirically -- see docs/PHASE2.md). Bands 1-4 are NOT in wavelength order: order is blue, green, red, nir."
+    },
+    "s2_s2b-36ruv-20230118-0-l2a_2048px.tif": {
+      "name": "Sentinel-2 L2A MGRS-36RUV window (2023-01-18)",
+      "filename": "s2_s2b-36ruv-20230118-0-l2a_2048px.tif",
+      "source_url": "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items/S2B_36RUV_20230118_0_L2A",
+      "what_it_is": "Real Copernicus Sentinel-2 MSI Level-2A surface-reflectance window: 2048x2048 px at 10 m (20.5 km), 4 bands (B02 blue, B03 green, B04 red, B08 nir), uint16 DN, EPSG:32636, nodata=0. Cut from the SAME pixel window as s2_s2b-36ruv-20230806-0-l2a_2048px.tif, so the two scenes share one CRS, affine transform and shape.",
+      "is_real_satellite_data": true,
+      "bands_are_physically_valid": true,
+      "good_for": [
+        "metadata",
+        "rgb_preview",
+        "false_colour_composite",
+        "ndvi",
+        "temporal ndvi change"
+      ],
+      "not_good_for": [
+        "cloud-covered pixels are not masked (scene-wide cloud is 0.061131); no atmospheric correction beyond L2A"
+      ],
+      "notes": "Reflectance = DN/10000 (BOA_ADD_OFFSET 0, verified empirically -- see docs/PHASE2.md). Band order is blue, green, red, nir -- NOT wavelength order. Acquired by the same sensor and processing level as the reference scene to keep the comparison like-for-like."
+    }
+  }
+}

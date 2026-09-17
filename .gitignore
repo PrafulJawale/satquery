@@ -1,0 +1,49 @@
+# SatQuery AI -- files that must never be committed.
+#
+# Rules:
+#   * source, configuration, documentation and the bundled sample scene are
+#     committed (the sample is small enough to ship and is needed to run);
+#   * anything fetched, generated or machine-local is not.
+
+# --- external datasets fetched at runtime (worldcover / soilgrids / ...) -----
+# These are downloaded subsets with their own licences; a JSON provenance
+# sidecar next to each one records source, licence and retrieval. Committing
+# them would break the attribution trail.
+data/external/
+
+# --- generated: verification output, screenshots, exports, logs --------------
+artifacts/
+*.log
+logs/
+
+# --- python / tooling --------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# --- streamlit ---------------------------------------------------------------
+.streamlit/secrets.toml
+
+# --- environments & secrets -------------------------------------------------
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+
+# --- editors / OS ------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

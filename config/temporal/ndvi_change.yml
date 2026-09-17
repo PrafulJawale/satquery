@@ -1,0 +1,132 @@
+# =============================================================================
+# Phase 10 -- temporal NDVI change: SEMANTIC DEFAULTS
+# =============================================================================
+# Every threshold, class code and colour the temporal layer uses lives here, so
+# nothing is hard-coded in Python (same rule as config/crops/cotton.yml and
+# config/spatial/conditions.yml).
+#
+# WHAT THIS CONFIGURATION DOES *NOT* SAY
+# --------------------------------------
+# None of these numbers identify a cause. An NDVI decrease is "a decrease in the
+# measured vegetation index" -- it is never, on its own, evidence of
+# deforestation, crop failure, flooding or drought. See `causal_wording` below:
+# the UI must use those strings verbatim rather than inventing conclusions.
+# =============================================================================
+
+version: "phase10"
+
+# -----------------------------------------------------------------------------
+# NDVI computation (identical to the single-date engine -- do not diverge)
+# -----------------------------------------------------------------------------
+ndvi:
+  formula: "(NIR - RED) / (NIR + RED)"
+  # DN -> surface reflectance. BOA_ADD_OFFSET is 0 for this processing baseline
+  # (verified empirically -- see docs/PHASE2.md).
+  reflectance_scale: 0.0001
+  reflectance_offset: 0.0
+  # |NIR + RED| below this is treated as undefined rather than divided by ~0.
+  min_denominator: 1.0e-6
+  # Band numbers are 1-based rasterio indexes into the 4-band sample stack
+  # (1=B02 blue, 2=B03 green, 3=B04 red, 4=B08 nir).
+  red_band_index: 3
+  nir_band_index: 4
+
+# -----------------------------------------------------------------------------
+# Change classification
+# -----------------------------------------------------------------------------
+change:
+  # delta >= +increase_threshold         -> Increase
+  # delta <= -decrease_threshold         -> Decrease
+  # otherwise                            -> Stable
+  #
+  # 0.10 is a DISPLAY CONVENTION for separating a seasonal/land-cover signal
+  # from single-date NDVI noise. It is NOT a validated agronomic or ecological
+  # threshold, and it is not tuned to any particular crop or region. Change the
+  # value here; nothing in Python needs to change.
+  increase_threshold: 0.10
+  decrease_threshold: 0.10
+  threshold_rationale: >-
+    Display convention, not a validated threshold. The value is chosen to be
+    larger than typical single-date NDVI noise while still showing field-scale
+    seasonal change. It carries no causal meaning.
+
+  # A comparison is only reported when at least this fraction of the ROI's cells
+  # have a VALID value in BOTH acquisitions. Below it the engine returns
+  # INSUFFICIENT_DATA instead of statistics computed on a biased subset.
+  min_valid_fraction: 0.60
+  # ...and at least this many cells, so a 3-cell ROI cannot "pass" on 2 cells.
+  min_valid_pixels: 4
+
+  delta_formula: "NDVI_after - NDVI_before"
+
+# -----------------------------------------------------------------------------
+# Alignment
+# -----------------------------------------------------------------------------
+alignment:
+  # When the two scenes share a CRS, affine transform and shape, nothing is
+  # resampled: the difference is computed on the native grid.
+  prefer_native_grid: true
+  # When they do NOT share a grid, both are resampled onto ONE explicit common
+  # grid whose cell size is the COARSER of the two native cell sizes. Resampling
+  # never creates information -- it only makes the two rasters comparable.
+  target_resolution: "coarsest_native"
+  # 'nearest' is mandatory for categorical sources; for continuous reflectance it
+  # also avoids inventing intermediate values that no sensor measured.
+  resampling: nearest
+  max_cells: 2000000
+  buffer_cells: 2
+
+# -----------------------------------------------------------------------------
+# Classes (map display). Codes are stored in the class raster.
+# -----------------------------------------------------------------------------
+classes:
+  labels:
+    0: "Insufficient data"
+    1: "Decrease"
+    2: "Stable"
+    3: "Increase"
+  order: [3, 2, 1, 0]
+  # RGBA, 0-255 each.
+  colours:
+    0: [150, 150, 150, 90]      # insufficient -- deliberately recessive
+    1: [215, 25, 28, 200]       # decrease    -- red
+    2: [250, 247, 190, 190]     # stable      -- pale
+    3: [26, 150, 65, 200]       # increase    -- green
+
+# -----------------------------------------------------------------------------
+# Wording the UI must use verbatim
+# -----------------------------------------------------------------------------
+causal_wording:
+  increase: "Vegetation index increased."
+  decrease: "Vegetation index decreased."
+  stable: "Vegetation index showed no change above the display threshold."
+  decrease_interpretation: >-
+    The observed change is consistent with reduced vegetation signal.
+  increase_interpretation: >-
+    The observed change is consistent with increased vegetation signal.
+  cause_caveat: >-
+    Additional data is required to identify the cause. An NDVI difference does
+    not by itself establish deforestation, crop failure, flooding, drought or
+    any other specific event.
+  not_claimable:
+    - "deforestation"
+    - "crop failure"
+    - "flooding"
+    - "drought"
+    - "any specific causal event"
+
+# -----------------------------------------------------------------------------
+# Limitations surfaced with every result
+# -----------------------------------------------------------------------------
+limitations:
+  - "Only two acquisitions are compared; this is not a time series."
+  - "NDVI differences are not attributed to a cause without additional data."
+  - "Cloud and cloud shadow are not masked per pixel; scene-wide cloud cover is
+     reported in the provenance instead."
+  - "Both scenes must contain a red and a near-infrared band; scenes without
+     them are rejected rather than approximated."
+  - "Where the grids differ, both scenes are resampled onto one common grid,
+     which adds no information and may blur field boundaries."
+  - "Atmospheric and BRDF differences between the two dates are not corrected
+     beyond the Sentinel-2 L2A processing."
+  - "Results are reported only for the selected area, never extrapolated."

@@ -1,0 +1,274 @@
+# =============================================================================
+# COTTON -- experimental crop-suitability screening configuration
+# =============================================================================
+# Every number that influences a result lives in THIS FILE, with its source and
+# its status. Nothing here is buried in Python.
+#
+# threshold_status values
+#   literature-backed   taken directly from an identifiable source for cotton
+#   literature-adapted  taken from a source, adjusted here, adjustment explained
+#   experimental        our construct; defensible as a screening heuristic only
+#
+# The whole file is EXPERIMENTAL SCREENING input. It is not a validated agronomic
+# recommendation and it is not a yield model.
+# =============================================================================
+
+crop: cotton
+scientific_name: Gossypium hirsutum
+label: Cotton
+config_version: "1.0"
+supported: true
+
+# -----------------------------------------------------------------------------
+# growing season -- drives BOTH the temperature and the water factor
+# -----------------------------------------------------------------------------
+# NOT hard-coded in Python: the months come from here.
+growing_season:
+  months: [4, 5, 6, 7, 8, 9, 10]          # April .. October  (7 months, ~214 days)
+  region_tag: "Egypt / Nile Delta (northern hemisphere)"
+  threshold_status: literature-informed
+  threshold_source: >-
+    USDA FAS "Cotton and Products Annual" (Cairo, Egypt, EG2026-0003): Egypt's
+    cotton planting season runs mid-March to mid-May, harvest September to
+    mid-December; ~80% of production is in the Nile Delta. Consistent with the
+    field trials reported by Abdelkader et al. (Advances in Crop Science and
+    Technology, 2018), sowing 22 March / harvest 16 September.
+  limitation: >-
+    The season is a FIXED CONFIGURATION, not derived per location. In cooler
+    regions some configured months may be too cold for cotton; the model does
+    not relocate the season.
+
+# -----------------------------------------------------------------------------
+# weights -- EXPERIMENTAL WEIGHTING SCHEME
+# -----------------------------------------------------------------------------
+# Not derived from an AHP study or a calibration dataset. Rationale: temperature
+# and water are the two first-order controls on cotton (they decide outright
+# whether the crop can complete a cycle); soil reaction and texture are
+# second-order (manageable by amendment and drainage); slope is minor for cotton
+# except for mechanisation and drainage. Visible, overridable, reported with
+# every result so a reviewer can challenge it.
+weights:
+  threshold_status: experimental
+  threshold_source: >-
+    Experimental weighting scheme (SatQuery Phase 8). Not literature-derived.
+    Documented in docs/PHASE8_DESIGN.md section 6.5.
+  values:
+    growing_season_temperature: 0.30
+    growing_season_precipitation: 0.30
+    soil_reaction: 0.15
+    soil_texture: 0.15
+    terrain_slope: 0.10
+
+# -----------------------------------------------------------------------------
+# factors
+# -----------------------------------------------------------------------------
+# category: critical   -> a membership of 0 vetoes the result (FAO "N" class)
+#            supporting -> scored, never vetoes, may be missing
+factors:
+
+  growing_season_temperature:
+    category: critical
+    label: Growing-season temperature
+    variable: monthly mean temperature, averaged as memberships over the season
+    unit: degC
+    optimum: [22.0, 32.0]
+    absolute: [15.0, 42.0]
+    aggregation: mean_of_monthly_memberships
+    input: membership          # the layer already IS a membership (0-1)
+    input_note: >-
+      Value is the mean of per-month trapezoid memberships over the growing
+      season, not a temperature in degrees. Monthly degrees are reported
+      separately as context.
+    gdd_base_temp_c: 15.6           # context metric only -- never scored
+    threshold_status: literature-adapted
+    threshold_source: >-
+      FAO EcoCrop / Gossypium hirsutum (tropical.theferns.info, FAO EcoCrop
+      parameterisation): optimal 22-36 degC, absolute 15-42 degC.
+    adaptation: >-
+      The upper optimum was reduced from 36 to 32 degC. The source range is
+      applied here to MONTHLY MEAN temperature, and a monthly mean of 36 degC
+      implies daily maxima well above 40 degC, i.e. heat stress, not optimum.
+      The 36 degC figure is retained as the absolute maximum.
+    unit_test_note: membership of the season = mean of per-month memberships.
+
+  growing_season_precipitation:
+    category: critical
+    label: Growing-season precipitation
+    variable: sum of monthly climatological precipitation over the season
+    unit: mm per growing season
+    optimum: [437.0, 700.0]
+    absolute: [262.0, 875.0]
+    threshold_status: experimental
+    threshold_source: >-
+      Derived from FAO EcoCrop annual rainfall for cotton: 750-1200 mm preferred,
+      450-1500 mm tolerated, scaled by the 7/12 growing-season month fraction
+      (0.583): 437-700 preferred, 262-875 tolerated.
+    adaptation: >-
+      Conflating annual with seasonal rainfall would be wrong: cotton in Egypt is
+      a summer crop and winter rain is unavailable to it. The seasonal thresholds
+      are a proportional rescaling, which assumes rainfall is spread evenly
+      through the year. In winter-rainfall climates (including the Nile Delta)
+      this OVERSTATES effective growing-season rainfall, so the water factor is
+      optimistic there, not pessimistic.
+    reports: [annual_precipitation, growing_season_precipitation, months_used]
+
+  soil_reaction:
+    category: critical
+    label: Soil reaction (pH)
+    layer: phh2o                       # the name the SoilGrids loader returns
+    variable: phh2o, 0-15 cm depth-weighted mean (SoilGrids 0-5 + 5-15 cm)
+    unit: pH
+    optimum: [6.0, 7.5]
+    absolute: [5.0, 9.5]
+    threshold_status: literature-backed
+    threshold_source: >-
+      FAO EcoCrop / Gossypium hirsutum: pH 6.0-7.5 preferred, 5.0-9.5 tolerated.
+    note: Cotton is among the more pH-tolerant field crops; 9.5 is a screening
+      ceiling, not a guarantee.
+
+  soil_texture:
+    category: supporting
+    label: Soil texture proxy (USDA class)
+    variable: usda_texture_class_from_sand_silt_clay
+    method: usda_class_then_score
+    inputs: [sand_pct, silt_pct, clay_pct]
+    threshold_status: experimental
+    threshold_source: >-
+      USDA texture classes are scored against FAO land-evaluation texture ratings
+      for upland crops (FAO 1976/1983; "Step 5. Evaluate land suitability":
+      S1 loam/clay/silty clay loam; S3 sandy loam; N sand/loamy sand;
+      and FAO "Soil and terrain suitability for surface irrigation": optimum
+      L-SiCL, range SL-MCs / CL-MCm).
+    adaptation: >-
+      Heavy-clay classes are scored BELOW the FAO water-holding rating because
+      cotton is sensitive to poor drainage and surface crusting; sandy classes
+      are scored low for water-holding. This is a texture PROXY, not a complete
+      soil-physical assessment (no structure, depth or gravel data).
+    class_scores:                      # membership 0..1 per USDA texture class
+      sand: 0.10
+      loamy_sand: 0.20
+      sandy_loam: 0.55
+      loam: 1.00
+      silt_loam: 0.90
+      silt: 0.55
+      sandy_clay_loam: 0.70
+      clay_loam: 0.85
+      silty_clay_loam: 0.80
+      sandy_clay: 0.45
+      silty_clay: 0.55
+      clay: 0.55
+
+  terrain_slope:
+    category: supporting
+    label: Terrain slope
+    variable: slope from Copernicus DEM (Horn 3x3)
+    unit: percent
+    optimum: [0.0, 2.0]
+    absolute: [0.0, 8.0]
+    threshold_status: literature-backed
+    threshold_source: >-
+      FAO "Soil and terrain suitability for surface irrigation" (upland crops):
+      slope optimum <2%, 2-8% acceptable; FAO Agro-ecological land resources
+      assessment slope classes A 0-2%, B 2-5%, C 5-8%, D 8-16%.
+    note: >-
+      Flat ground scores optimally for cotton (mechanisation, uniform irrigation)
+      but very flat, heavy-textured land has a drainage risk -- reported as a
+      separate caveat, never as a scored penalty.
+
+# -----------------------------------------------------------------------------
+# hard land-cover constraints (not suitability factors -- exclusions)
+# -----------------------------------------------------------------------------
+land_cover:
+  source: ESA WorldCover 2021 v200 (10 m)
+  policy_status: experimental
+  policy_note: >-
+    A non-cropland pixel is NOT automatically unsuitable: it may simply be
+    uncultivated. Only physically or legally implausible classes are excluded.
+  exclude:
+    50: "Built-up"
+    80: "Permanent water bodies"
+    95: "Mangroves"
+    70: "Snow and ice"
+    100: "Moss and lichen"
+    90: "Herbaceous wetland"
+  exclude_justification:
+    90: "Cotton is intolerant of waterlogged soils; herbaceous wetland implies prolonged standing water."
+  allow_with_context:
+    10: "Tree cover -- physically plantable, but this is a land-use decision, not a suitability statement."
+    20: "Shrubland"
+    30: "Grassland"
+    40: "Cropland"
+    60: "Bare / sparse vegetation"
+  cropland_caveat: >-
+    WorldCover class 40 means "cropland" of ANY crop in 2021. It does not mean
+    cotton was grown, and it does not mean the land is currently cultivated.
+
+# -----------------------------------------------------------------------------
+# classification -- EXPERIMENTAL SCREENING THRESHOLDS
+# -----------------------------------------------------------------------------
+classes:
+  threshold_status: experimental
+  threshold_source: >-
+    Experimental screening thresholds (SatQuery Phase 8). Rounded, evenly spaced
+    breaks on the 0..1 weighted-membership scale. They are deliberately coarse
+    because the underlying memberships are coarse.
+  highly_suitable: 0.75
+  moderately_suitable: 0.55
+  marginal: 0.35
+  labels:
+    highly: "Highly suitable"
+    moderate: "Moderately suitable"
+    marginal: "Marginal"
+    unsuitable: "Unsuitable"
+    insufficient: "Insufficient data"
+
+# -----------------------------------------------------------------------------
+# scenarios
+# -----------------------------------------------------------------------------
+scenarios:
+  rainfed:
+    label: "Rainfed (data-backed)"
+    water_factor: growing_season_precipitation
+    water_treatment: scored
+    description: >-
+      Water supply is scored from climatological precipitation over the growing
+      season. Every factor in the result is computed from data.
+  irrigation_assumed:
+    label: "Irrigation-assumed (hypothetical sensitivity analysis)"
+    water_factor: growing_season_precipitation
+    water_treatment: assumed
+    hypothetical: true
+    max_class: "Moderately suitable"
+    confidence: Low
+    assumed_factors: [irrigation_water_availability]
+    required_wording: >-
+      Under the hypothetical assumption that adequate irrigation water is
+      continuously available...
+    description: >-
+      The water factor is removed and the remaining weights are renormalised.
+      This is a SENSITIVITY ANALYSIS showing what the other factors alone would
+      indicate. It is not a suitability assessment of this land, because the
+      dominant real-world constraint (water) is assumed away and salinity --
+      a critical constraint under irrigation -- was not assessed.
+
+# -----------------------------------------------------------------------------
+# unassessed constraints -- reported as limitations, NEVER scored
+# -----------------------------------------------------------------------------
+unassessed_constraints:
+  - id: soil_salinity
+    label: Soil salinity / electrical conductivity
+    reason: No public global salinity raster was integrated in this prototype.
+    severity_note: >-
+      First-order constraint for irrigated cotton in an arid delta.
+  - id: irrigation_availability
+    label: Irrigation water availability and reliability
+    reason: No public raster source of irrigation supply was integrated.
+  - id: soil_depth
+    label: Soil depth and rooting volume
+    reason: Not available from the integrated soil source.
+  - id: drainage_class
+    label: Soil drainage class / water-table depth
+    reason: Not directly measured; only a slope+texture risk flag is reported.
+  - id: daily_extremes
+    label: Daily temperature extremes and frost frequency
+    reason: Only monthly climatological means were used.

@@ -1,0 +1,98 @@
+# =============================================================================
+# Phase 9 -- multi-condition spatial query: SEMANTIC DEFAULTS
+# =============================================================================
+# Every number and class code the spatial layer uses lives here, so nothing is
+# hard-coded in Python (same rule as config/crops/cotton.yml).
+#
+# Approved decisions (Checkpoint A):
+#   * "suitable cotton"  = Phase 8 class >= 3  (Moderately / Highly suitable)
+#   * "near water"       = WorldCover class 80 (permanent water) ONLY
+#   * distance           = cell centre to water cell centre, metres, projected CRS
+#   * unsupported conditions abort the computation -- never a proxy
+# =============================================================================
+
+version: "phase9-checkpoint-b"
+
+# -----------------------------------------------------------------------------
+# cotton suitability condition (reuses the Phase 8 engine verbatim)
+# -----------------------------------------------------------------------------
+cotton:
+  crop: cotton
+  # 3 = "Moderately suitable". 2 (Marginal) is deliberately NOT suitable.
+  min_suitability_class: 3
+  # The rainfed scenario is data-backed. The irrigation-assumed scenario is a
+  # hypothetical sensitivity analysis and must never be stacked on a
+  # water-proximity condition: that would compound two assumptions.
+  scenario: rainfed
+  required_analysis: crop_suitability
+  class_labels:
+    0: "Insufficient data"
+    1: "Unsuitable"
+    2: "Marginal"
+    3: "Moderately suitable"
+    4: "Highly suitable"
+  interpretation: >-
+    "suitable for cotton" means the Phase 8 screening class is Moderately
+    suitable or better, computed for rainfed conditions. Marginal areas are
+    excluded on purpose.
+
+# -----------------------------------------------------------------------------
+# land-cover conditions (ESA WorldCover 2021 v200)
+# -----------------------------------------------------------------------------
+land_cover:
+  dataset: worldcover
+  version: "v200"
+  required_analysis: worldcover
+  cropland_class: 40
+  built_up_class: 50
+  # Recorded so that nobody "fixes" the water condition by adding it later.
+  wetland_class: 90
+  class_names:
+    40: "Cropland"
+    50: "Built-up"
+    80: "Permanent water bodies"
+    90: "Herbaceous wetland"
+  cropland_interpretation: >-
+    "cropland" is the 2021 land-cover class only. It means the land was mapped
+    as some crop in 2021; it is NOT a statement about suitability.
+
+# -----------------------------------------------------------------------------
+# water proximity condition
+# -----------------------------------------------------------------------------
+water:
+  dataset: worldcover
+  required_analysis: worldcover
+  water_class: 80
+  default_proximity_m: 1000
+  min_proximity_m: 30          # one 30 m analysis cell
+  max_proximity_m: 10000       # beyond this the query stops being "near"
+  # Distance is measured centre-to-centre, so the boundary is accurate to about
+  # half a cell diagonal. Stated, not hidden.
+  distance_convention: >-
+    A cell is "near water" when its cell centre is within the configured
+    distance in metres of a WorldCover class-80 permanent-water cell, measured
+    in the projected analysis CRS.
+  water_class_interpretation: >-
+    "water" means the cell itself is mapped as permanent surface water
+    (WorldCover class 80, 2021). It is not flooding, not irrigation, not
+    groundwater and not soil moisture. Herbaceous wetland (class 90) is a
+    different class and is deliberately excluded.
+  interpretation: >-
+    "near water" means proximity to mapped permanent surface water only. It is
+    NOT irrigation availability, groundwater, canal access, soil moisture or
+    waterlogging, and it says nothing about a reliable water supply.
+
+# -----------------------------------------------------------------------------
+# distance vocabulary -> metres
+# -----------------------------------------------------------------------------
+distance_units:
+  m: 1.0
+  meter: 1.0
+  metre: 1.0
+  meters: 1.0
+  metres: 1.0
+  km: 1000.0
+  kilometer: 1000.0
+  kilometre: 1000.0
+  kilometers: 1000.0
+  kilometres: 1000.0

@@ -1,0 +1,28 @@
+[server]
+headless = true
+address = "0.0.0.0"
+port = 8501
+# Prototype scenes are big; the Streamlit default upload cap is 200 MB.
+maxUploadSize = 1024
+# Required when Streamlit is served through a proxy/preview iframe.
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+# A restrained, light product surface: the data (imagery, rasters, evidence
+# tables) is the colour in this app, so the chrome around it stays neutral.
+base = "light"
+primaryColor = "#0e7490"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f6f8fa"
+textColor = "#0f172a"
+font = "sans serif"
+
+[client]
+# A production app reports an error, not a Python traceback.
+showErrorDetails = false
+toolbarMode = "minimal"
+showSidebarNavigation = false

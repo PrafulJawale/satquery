@@ -1,0 +1,2826 @@
+{
+  "generated": "2026-09-15 11:06:05",
+  "python": "3.13.14",
+  "platform": "Linux-6.1.158+-x86_64-with-glibc2.41",
+  "aois": {
+    "AOI-1": {
+      "bounds": [
+        385940.0,
+        3450560.0,
+        388940.0,
+        3453560.0
+      ],
+      "worldcover": {
+        "record": {
+          "dataset": "worldcover",
+          "version": "v200_2021",
+          "variable": "land_cover",
+          "native_resolution": "10 m",
+          "native_crs": "EPSG:4326",
+          "units": "class code",
+          "temporal_period": "2021 epoch",
+          "source_url": "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_N30E030_Map.tif",
+          "license": "CC BY 4.0 (ESA WorldCover project; doi 10.5281/zenodo.7254221)",
+          "access_date": "2026-09-14",
+          "source_nodata": null,
+          "resampling": "nearest",
+          "processing": "windowed read; nearest-neighbour reprojection (categorical)",
+          "limitations": "Thematic accuracy ~75% globally; class 40 'cropland' means ANY crop in 2021 (not cotton, not currently cultivated); v100 (2020) and v200 (2021) use different algorithms and must not be compared.",
+          "dataset_status": "literature-backed"
+        },
+        "classes": {
+          "10": 5,
+          "20": 16,
+          "30": 47,
+          "40": 9210,
+          "50": 570,
+          "60": 2,
+          "90": 1175
+        },
+        "grid": {
+          "crs": "EPSG:32636",
+          "resolution_m": 30.0,
+          "requested_resolution_m": 30.0,
+          "width": 105,
+          "height": 105,
+          "cells": 11025,
+          "bounds": [
+            385860.0,
+            3450480.0,
+            389010.0,
+            3453630.0
+          ],
+          "transform": [
+            30.0,
+            0.0,
+            385860.0,
+            0.0,
+            -30.0,
+            3453630.0
+          ],
+          "coarsened": false,
+          "note": ""
+        },
+        "from_cache": true,
+        "seconds": 0.025329744999908144
+      },
+      "cases": [
+        {
+          "case": "1. cotton suitability alone",
+          "query": "Find areas suitable for cotton",
+          "status": "OK",
+          "result_status": "zero_matches",
+          "expression": "cotton_suitability(cotton, class >= 3, rainfed)",
+          "matched_cell_count": 0,
+          "non_matching_cell_count": 10000,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_area_m2": 0.0,
+          "matched_fraction": 0.0,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 cotton_suitability(cotton, class >= 3, rainfed). That is a statement about the selected area, not about the surrounding region. Per condition: cotton suitability (class >= 3, rainfed): 0 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [
+            "16.1% of the area is a hard land-cover constraint (Cropland) and is screened as Unsuitable, not scored.",
+            "The area is very flat with a clay-rich topsoil, so natural drainage may be poor. Drainage was not measured; this is a risk flag derived from slope and texture, not a scored factor.",
+            "Critical-factor veto: growing_season_precipitation is outside the absolute tolerance range for cotton, so the area is screened as Unsuitable regardless of the weighted score (0.66).",
+            "The soil layer is native 250 m but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~250 m.",
+            "The climate layer is native ~1 km but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~~1 km.",
+            "This is an experimental screening of long-term, static public data. It is not a crop recommendation, a yield prediction, a soil diagnosis or an irrigation-availability statement, and it must be validated with local agronomic and field information before it means anything on the ground."
+          ],
+          "performance": {
+            "timings": {
+              "suitability_seconds": 0.1539368779999677,
+              "roi_mask_seconds": 0.21081048300004568,
+              "total_seconds": 0.21128422399999636
+            },
+            "cells": 11025,
+            "conditions": 1,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              385860.0,
+              0.0,
+              -30.0,
+              3453630.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 105,
+            "height": 105,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "cotton suitability (class >= 3, rainfed)",
+              "source": "phase8:cotton_suitability",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  385860.0,
+                  0.0,
+                  -30.0,
+                  3453630.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 105,
+                "height": 105,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 10000,
+                "cells_in_scope": 11025,
+                "matching_cells": 0,
+                "non_matching_cells": 10000,
+                "insufficient_cells": 1025,
+                "valid_cells": 10000,
+                "matched_fraction": 0.0,
+                "insufficient_fraction": 0.09297052154195011,
+                "matched_area_m2": 0.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "min_class": 3,
+                "insufficient_code": 0,
+                "scenario": "rainfed",
+                "crop": "cotton"
+              },
+              "scenario": "rainfed",
+              "min_class": 3,
+              "class_label": "class >= 3",
+              "analysis_resolution_m": 30.0,
+              "condition": "crop_suitability",
+              "negated": false,
+              "evidence": [
+                "suitable for cotton"
+              ],
+              "interpretation": "\"suitable for cotton\" means the Phase 8 screening class is Moderately suitable or better, computed for rainfed conditions. Marginal areas are excluded on purpose.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "2. permanent water alone",
+          "query": "Find water",
+          "status": "OK",
+          "result_status": "zero_matches",
+          "expression": "water(class [80])",
+          "matched_cell_count": 0,
+          "non_matching_cell_count": 10000,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_area_m2": 0.0,
+          "matched_fraction": 0.0,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 water(class [80]). That is a statement about the selected area, not about the surrounding region. Per condition: water (WorldCover class [80]): 0 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [],
+          "performance": {
+            "timings": {
+              "grid_seconds": 0.0003628890000300089,
+              "roi_mask_seconds": 0.058037474000002476,
+              "landcover_seconds": 0.0027008990000467747,
+              "total_seconds": 0.06119760399997176
+            },
+            "cells": 11025,
+            "conditions": 1,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              385860.0,
+              0.0,
+              -30.0,
+              3453630.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 105,
+            "height": 105,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "water (WorldCover class [80])",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  385860.0,
+                  0.0,
+                  -30.0,
+                  3453630.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 105,
+                "height": 105,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 11025,
+                "cells_in_scope": 11025,
+                "matching_cells": 0,
+                "non_matching_cells": 11025,
+                "insufficient_cells": 0,
+                "valid_cells": 11025,
+                "matched_fraction": 0.0,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 0.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "water_class": 80,
+                "wetland_class_excluded": 90
+              },
+              "condition": "water",
+              "negated": false,
+              "evidence": [
+                "water"
+              ],
+              "interpretation": "\"water\" means the cell itself is mapped as permanent surface water (WorldCover class 80, 2021). It is not flooding, not irrigation, not groundwater and not soil moisture. Herbaceous wetland (class 90) is a different class and is deliberately excluded.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "3. near permanent water (default distance)",
+          "query": "Find areas near water",
+          "status": "OK",
+          "result_status": "ok",
+          "expression": "water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 1047,
+          "non_matching_cell_count": 8953,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_area_m2": 942300.0,
+          "matched_fraction": 0.1047,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 10.5% of analysed cells (1,047 cells, 0.942 km\u00b2) satisfy all requested conditions \u2014 water_proximity(<= 1000 m, class 80). Per condition: within 1000 m of mapped permanent water (class 80): 8,346 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [],
+          "performance": {
+            "timings": {
+              "grid_seconds": 0.0003097989999787387,
+              "roi_mask_seconds": 0.05861775100004252,
+              "landcover_seconds": 0.0025670630000149686,
+              "water_mask_seconds": 8.823199993912567e-05,
+              "total_seconds": 0.7053231900000583
+            },
+            "cells": 29241,
+            "conditions": 1,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              384870.0,
+              0.0,
+              -30.0,
+              3454620.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 171,
+            "height": 171,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "within 1000 m of mapped permanent water (class 80)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  384870.0,
+                  0.0,
+                  -30.0,
+                  3454620.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 171,
+                "height": 171,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 17948,
+                "cells_in_scope": 29241,
+                "matching_cells": 8346,
+                "non_matching_cells": 9602,
+                "insufficient_cells": 11293,
+                "valid_cells": 17948,
+                "matched_fraction": 0.4650100289725875,
+                "insufficient_fraction": 0.3862043021784481,
+                "matched_area_m2": 7511400.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "distance_m": 1000.0,
+                "method": "scipy.ndimage.distance_transform_edt on the projected analysis grid, distance between cell centres, in metres",
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "source_water_class": 80,
+                "water_cells_found": 72,
+                "edge_rule": "a cell is only FALSE when the nearest unknown cell or the window edge is farther away than the threshold; otherwise the answer is INSUFFICIENT, because water just outside the window cannot be ruled out",
+                "undecidable_cells": 11293
+              },
+              "condition": "water_proximity",
+              "negated": false,
+              "evidence": [
+                "near",
+                "water"
+              ],
+              "interpretation": "\"near water\" means proximity to mapped permanent surface water only. It is NOT irrigation availability, groundwater, canal access, soil moisture or waterlogging, and it says nothing about a reliable water supply.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "4. cotton AND near permanent water",
+          "query": "Find cotton areas near water",
+          "status": "OK",
+          "result_status": "zero_matches",
+          "expression": "cotton_suitability(cotton, class >= 3, rainfed) AND water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 0,
+          "non_matching_cell_count": 10000,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_area_m2": 0.0,
+          "matched_fraction": 0.0,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 cotton_suitability(cotton, class >= 3, rainfed) AND water_proximity(<= 1000 m, class 80). That is a statement about the selected area, not about the surrounding region. Per condition: cotton suitability (class >= 3, rainfed): 0 cells; within 1000 m of mapped permanent water (class 80): 9,198 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [
+            "16.1% of the area is a hard land-cover constraint (Cropland) and is screened as Unsuitable, not scored.",
+            "The area is very flat with a clay-rich topsoil, so natural drainage may be poor. Drainage was not measured; this is a risk flag derived from slope and texture, not a scored factor.",
+            "Critical-factor veto: growing_season_precipitation is outside the absolute tolerance range for cotton, so the area is screened as Unsuitable regardless of the weighted score (0.66).",
+            "The soil layer is native 250 m but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~250 m.",
+            "The climate layer is native ~1 km but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~~1 km.",
+            "This is an experimental screening of long-term, static public data. It is not a crop recommendation, a yield prediction, a soil diagnosis or an irrigation-availability statement, and it must be validated with local agronomic and field information before it means anything on the ground.",
+            "Permanent-water proximity was computed on a buffered WorldCover window (177x177 cells, +36 cells per side = 1080 m) and cropped back to the 105x105 analysis grid."
+          ],
+          "performance": {
+            "timings": {
+              "suitability_seconds": 3.819000085059088e-06,
+              "roi_mask_seconds": 0.058758531999956176,
+              "landcover_seconds": 0.002670933999979752,
+              "water_mask_seconds": 0.00010530899999139365,
+              "total_seconds": 0.0665152169999601
+            },
+            "cells": 11025,
+            "conditions": 2,
+            "window": {
+              "buffer_cells": 36,
+              "source_window_cells": [
+                177,
+                177
+              ],
+              "analysis_window_cells": [
+                105,
+                105
+              ],
+              "buffer_metres": 1080.0
+            }
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              385860.0,
+              0.0,
+              -30.0,
+              3453630.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 105,
+            "height": 105,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "cotton suitability (class >= 3, rainfed)",
+              "source": "phase8:cotton_suitability",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  385860.0,
+                  0.0,
+                  -30.0,
+                  3453630.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 105,
+                "height": 105,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 10000,
+                "cells_in_scope": 11025,
+                "matching_cells": 0,
+                "non_matching_cells": 10000,
+                "insufficient_cells": 1025,
+                "valid_cells": 10000,
+                "matched_fraction": 0.0,
+                "insufficient_fraction": 0.09297052154195011,
+                "matched_area_m2": 0.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "min_class": 3,
+                "insufficient_code": 0,
+                "scenario": "rainfed",
+                "crop": "cotton"
+              },
+              "scenario": "rainfed",
+              "min_class": 3,
+              "class_label": "class >= 3",
+              "analysis_resolution_m": 30.0,
+              "condition": "crop_suitability",
+              "negated": false,
+              "evidence": [
+                "cotton",
+                "cotton areas"
+              ],
+              "interpretation": "\"suitable for cotton\" means the Phase 8 screening class is Moderately suitable or better, computed for rainfed conditions. Marginal areas are excluded on purpose.",
+              "status": "supported"
+            },
+            {
+              "name": "within 1000 m of mapped permanent water (class 80)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  384780.0,
+                  0.0,
+                  -30.0,
+                  3454710.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 177,
+                "height": 177,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 19660,
+                "cells_in_scope": 31329,
+                "matching_cells": 9198,
+                "non_matching_cells": 10462,
+                "insufficient_cells": 11669,
+                "valid_cells": 19660,
+                "matched_fraction": 0.46785350966429295,
+                "insufficient_fraction": 0.37246640492834115,
+                "matched_area_m2": 8278200.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "distance_m": 1000.0,
+                "method": "scipy.ndimage.distance_transform_edt on the projected analysis grid, distance between cell centres, in metres",
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "source_water_class": 80,
+                "water_cells_found": 75,
+                "edge_rule": "a cell is only FALSE when the nearest unknown cell or the window edge is farther away than the threshold; otherwise the answer is INSUFFICIENT, because water just outside the window cannot be ruled out",
+                "undecidable_cells": 11669
+              },
+              "condition": "water_proximity",
+              "negated": false,
+              "evidence": [
+                "near",
+                "water"
+              ],
+              "interpretation": "\"near water\" means proximity to mapped permanent surface water only. It is NOT irrigation availability, groundwater, canal access, soil moisture or waterlogging, and it says nothing about a reliable water supply.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "5. cropland AND near permanent water",
+          "query": "Find cropland near water",
+          "status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 884,
+          "non_matching_cell_count": 9116,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_area_m2": 795600.0,
+          "matched_fraction": 0.0884,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 8.8% of analysed cells (884 cells, 0.796 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND water_proximity(<= 1000 m, class 80). Per condition: land cover class [40] (Cropland): 23,626 cells; within 1000 m of mapped permanent water (class 80): 8,346 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [],
+          "performance": {
+            "timings": {
+              "grid_seconds": 0.0003416239999296522,
+              "roi_mask_seconds": 0.058879945999933625,
+              "landcover_seconds": 0.0024781679999250628,
+              "water_mask_seconds": 4.679799997120426e-05,
+              "total_seconds": 0.0651447799999687
+            },
+            "cells": 29241,
+            "conditions": 2,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              384870.0,
+              0.0,
+              -30.0,
+              3454620.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 171,
+            "height": 171,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "land cover class [40] (Cropland)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  384870.0,
+                  0.0,
+                  -30.0,
+                  3454620.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 171,
+                "height": 171,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 29241,
+                "cells_in_scope": 29241,
+                "matching_cells": 23626,
+                "non_matching_cells": 5615,
+                "insufficient_cells": 0,
+                "valid_cells": 29241,
+                "matched_fraction": 0.8079751034506344,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 21263400.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "classes": [
+                  40
+                ]
+              },
+              "condition": "land_cover_class",
+              "negated": false,
+              "evidence": [
+                "cropland"
+              ],
+              "interpretation": "\"cropland\" is the 2021 land-cover class only. It means the land was mapped as some crop in 2021; it is NOT a statement about suitability.",
+              "status": "supported"
+            },
+            {
+              "name": "within 1000 m of mapped permanent water (class 80)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  384870.0,
+                  0.0,
+                  -30.0,
+                  3454620.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 171,
+                "height": 171,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 17948,
+                "cells_in_scope": 29241,
+                "matching_cells": 8346,
+                "non_matching_cells": 9602,
+                "insufficient_cells": 11293,
+                "valid_cells": 17948,
+                "matched_fraction": 0.4650100289725875,
+                "insufficient_fraction": 0.3862043021784481,
+                "matched_area_m2": 7511400.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "distance_m": 1000.0,
+                "method": "scipy.ndimage.distance_transform_edt on the projected analysis grid, distance between cell centres, in metres",
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "source_water_class": 80,
+                "water_cells_found": 72,
+                "edge_rule": "a cell is only FALSE when the nearest unknown cell or the window edge is farther away than the threshold; otherwise the answer is INSUFFICIENT, because water just outside the window cannot be ruled out",
+                "undecidable_cells": 11293
+              },
+              "condition": "water_proximity",
+              "negated": false,
+              "evidence": [
+                "near",
+                "water"
+              ],
+              "interpretation": "\"near water\" means proximity to mapped permanent surface water only. It is NOT irrigation availability, groundwater, canal access, soil moisture or waterlogging, and it says nothing about a reliable water supply.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "6. cropland AND NOT permanent water",
+          "query": "Find cropland excluding water",
+          "status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND NOT water(class [80])",
+          "matched_cell_count": 8335,
+          "non_matching_cell_count": 1665,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_area_m2": 7501500.0,
+          "matched_fraction": 0.8335,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 83.4% of analysed cells (8,335 cells, 7.502 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND NOT water(class [80]). Per condition: land cover class [40] (Cropland): 9,210 cells; NOT NOT water (WorldCover class [80]): 11,025 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [],
+          "performance": {
+            "timings": {
+              "grid_seconds": 0.0003847250000035274,
+              "roi_mask_seconds": 0.06243974199992408,
+              "landcover_seconds": 0.002541261000033046,
+              "total_seconds": 0.06612493499994798
+            },
+            "cells": 11025,
+            "conditions": 2,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              385860.0,
+              0.0,
+              -30.0,
+              3453630.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 105,
+            "height": 105,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "land cover class [40] (Cropland)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  385860.0,
+                  0.0,
+                  -30.0,
+                  3453630.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 105,
+                "height": 105,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 11025,
+                "cells_in_scope": 11025,
+                "matching_cells": 9210,
+                "non_matching_cells": 1815,
+                "insufficient_cells": 0,
+                "valid_cells": 11025,
+                "matched_fraction": 0.8353741496598639,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 8289000.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "classes": [
+                  40
+                ]
+              },
+              "condition": "land_cover_class",
+              "negated": false,
+              "evidence": [
+                "cropland"
+              ],
+              "interpretation": "\"cropland\" is the 2021 land-cover class only. It means the land was mapped as some crop in 2021; it is NOT a statement about suitability.",
+              "status": "supported"
+            },
+            {
+              "name": "NOT NOT water (WorldCover class [80])",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  385860.0,
+                  0.0,
+                  -30.0,
+                  3453630.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 105,
+                "height": 105,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 11025,
+                "cells_in_scope": 11025,
+                "matching_cells": 11025,
+                "non_matching_cells": 0,
+                "insufficient_cells": 0,
+                "valid_cells": 11025,
+                "matched_fraction": 1.0,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 9922500.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "negated_from": "NOT water (WorldCover class [80])"
+              },
+              "condition": "water",
+              "negated": true,
+              "evidence": [
+                "water",
+                "excluding"
+              ],
+              "interpretation": "\"water\" means the cell itself is mapped as permanent surface water (WorldCover class 80, 2021). It is not flooding, not irrigation, not groundwater and not soil moisture. Herbaceous wetland (class 90) is a different class and is deliberately excluded.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "7. zero-match by construction",
+          "query": "Find cropland and water",
+          "status": "OK",
+          "result_status": "zero_matches",
+          "expression": "land_cover([40]) AND water(class [80])",
+          "matched_cell_count": 0,
+          "non_matching_cell_count": 10000,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_area_m2": 0.0,
+          "matched_fraction": 0.0,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 land_cover([40]) AND water(class [80]). That is a statement about the selected area, not about the surrounding region. Per condition: land cover class [40] (Cropland): 9,210 cells; water (WorldCover class [80]): 0 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [],
+          "performance": {
+            "timings": {
+              "grid_seconds": 0.00046318199997585907,
+              "roi_mask_seconds": 0.10611118300005273,
+              "landcover_seconds": 0.0029298700000026656,
+              "total_seconds": 0.11048417400002108
+            },
+            "cells": 11025,
+            "conditions": 2,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              385860.0,
+              0.0,
+              -30.0,
+              3453630.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 105,
+            "height": 105,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "land cover class [40] (Cropland)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  385860.0,
+                  0.0,
+                  -30.0,
+                  3453630.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 105,
+                "height": 105,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 11025,
+                "cells_in_scope": 11025,
+                "matching_cells": 9210,
+                "non_matching_cells": 1815,
+                "insufficient_cells": 0,
+                "valid_cells": 11025,
+                "matched_fraction": 0.8353741496598639,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 8289000.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "classes": [
+                  40
+                ]
+              },
+              "condition": "land_cover_class",
+              "negated": false,
+              "evidence": [
+                "cropland"
+              ],
+              "interpretation": "\"cropland\" is the 2021 land-cover class only. It means the land was mapped as some crop in 2021; it is NOT a statement about suitability.",
+              "status": "supported"
+            },
+            {
+              "name": "water (WorldCover class [80])",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  385860.0,
+                  0.0,
+                  -30.0,
+                  3453630.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 105,
+                "height": 105,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 11025,
+                "cells_in_scope": 11025,
+                "matching_cells": 0,
+                "non_matching_cells": 11025,
+                "insufficient_cells": 0,
+                "valid_cells": 11025,
+                "matched_fraction": 0.0,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 0.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "water_class": 80,
+                "wetland_class_excluded": 90
+              },
+              "condition": "water",
+              "negated": false,
+              "evidence": [
+                "water"
+              ],
+              "interpretation": "\"water\" means the cell itself is mapped as permanent surface water (WorldCover class 80, 2021). It is not flooding, not irrigation, not groundwater and not soil moisture. Herbaceous wetland (class 90) is a different class and is deliberately excluded.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "8. insufficient data (cotton)",
+          "query": "Find areas suitable for cotton",
+          "status": "OK",
+          "result_status": "zero_matches",
+          "expression": "cotton_suitability(cotton, class >= 3, rainfed)",
+          "matched_cell_count": 0,
+          "non_matching_cell_count": 10000,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_area_m2": 0.0,
+          "matched_fraction": 0.0,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 cotton_suitability(cotton, class >= 3, rainfed). That is a statement about the selected area, not about the surrounding region. Per condition: cotton suitability (class >= 3, rainfed): 0 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [
+            "16.1% of the area is a hard land-cover constraint (Cropland) and is screened as Unsuitable, not scored.",
+            "The area is very flat with a clay-rich topsoil, so natural drainage may be poor. Drainage was not measured; this is a risk flag derived from slope and texture, not a scored factor.",
+            "Critical-factor veto: growing_season_precipitation is outside the absolute tolerance range for cotton, so the area is screened as Unsuitable regardless of the weighted score (0.66).",
+            "The soil layer is native 250 m but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~250 m.",
+            "The climate layer is native ~1 km but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~~1 km.",
+            "This is an experimental screening of long-term, static public data. It is not a crop recommendation, a yield prediction, a soil diagnosis or an irrigation-availability statement, and it must be validated with local agronomic and field information before it means anything on the ground."
+          ],
+          "performance": {
+            "timings": {
+              "suitability_seconds": 4.197999942334718e-06,
+              "roi_mask_seconds": 0.06471434600007342,
+              "total_seconds": 0.06519829199999094
+            },
+            "cells": 11025,
+            "conditions": 1,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              385860.0,
+              0.0,
+              -30.0,
+              3453630.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 105,
+            "height": 105,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "cotton suitability (class >= 3, rainfed)",
+              "source": "phase8:cotton_suitability",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  385860.0,
+                  0.0,
+                  -30.0,
+                  3453630.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 105,
+                "height": 105,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 10000,
+                "cells_in_scope": 11025,
+                "matching_cells": 0,
+                "non_matching_cells": 10000,
+                "insufficient_cells": 1025,
+                "valid_cells": 10000,
+                "matched_fraction": 0.0,
+                "insufficient_fraction": 0.09297052154195011,
+                "matched_area_m2": 0.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "min_class": 3,
+                "insufficient_code": 0,
+                "scenario": "rainfed",
+                "crop": "cotton"
+              },
+              "scenario": "rainfed",
+              "min_class": 3,
+              "class_label": "class >= 3",
+              "analysis_resolution_m": 30.0,
+              "condition": "crop_suitability",
+              "negated": false,
+              "evidence": [
+                "suitable for cotton"
+              ],
+              "interpretation": "\"suitable for cotton\" means the Phase 8 screening class is Moderately suitable or better, computed for rainfed conditions. Marginal areas are excluded on purpose.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "9a. unsupported: irrigation",
+          "query": "Find cotton areas with irrigation",
+          "status": "UNSUPPORTED_CONDITION",
+          "message": "I can evaluate proximity to mapped surface water, but reliable irrigation availability is not currently measured. Nothing was computed: a proxy would be misleading.",
+          "result": null
+        },
+        {
+          "case": "9b. unsupported: flood",
+          "query": "Find cotton areas outside flood-prone zones",
+          "status": "UNSUPPORTED_CONDITION",
+          "message": "Flood analysis is not available yet. I will not estimate flood risk from permanent water: they are different things. Nothing was computed: a proxy would be misleading.",
+          "result": null
+        }
+      ],
+      "gallery": [
+        {
+          "query": "Find cropland near water",
+          "conditions": "land_cover_class, water_proximity",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 884,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_fraction": 0.0884,
+          "message": "Within the selected ROI, 8.8% of analysed cells (884 cells, 0.796 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND water_proximity(<= 1000 m, class 80). Per condition: land cover class [40] (Cropland): 23,626 cells; within 1000 m of mapped permanent water (class 80): 8,346 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find areas suitable for cotton near water",
+          "conditions": "crop_suitability, water_proximity",
+          "execution_status": "OK",
+          "result_status": "zero_matches",
+          "expression": "cotton_suitability(cotton, class >= 3, rainfed) AND water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 0,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_fraction": 0.0,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 cotton_suitability(cotton, class >= 3, rainfed) AND water_proximity(<= 1000 m, class 80). That is a statement about the selected area, not about the surrounding region. Per condition: cotton suitability (class >= 3, rainfed): 0 cells; within 1000 m of mapped permanent water (class 80): 9,198 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find cropland excluding water",
+          "conditions": "land_cover_class, NOT water",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND NOT water(class [80])",
+          "matched_cell_count": 8335,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_fraction": 0.8335,
+          "message": "Within the selected ROI, 83.4% of analysed cells (8,335 cells, 7.502 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND NOT water(class [80]). Per condition: land cover class [40] (Cropland): 9,210 cells; NOT NOT water (WorldCover class [80]): 11,025 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find permanent water",
+          "conditions": "water",
+          "execution_status": "OK",
+          "result_status": "zero_matches",
+          "expression": "water(class [80])",
+          "matched_cell_count": 0,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_fraction": 0.0,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 water(class [80]). That is a statement about the selected area, not about the surrounding region. Per condition: water (WorldCover class [80]): 0 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find built-up areas near water",
+          "conditions": "water_proximity, land_cover_class",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "water_proximity(<= 1000 m, class 80) AND land_cover([50])",
+          "matched_cell_count": 35,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_fraction": 0.0035,
+          "message": "Within the selected ROI, 0.4% of analysed cells (35 cells, 0.032 km\u00b2) satisfy all requested conditions \u2014 water_proximity(<= 1000 m, class 80) AND land_cover([50]). Per condition: within 1000 m of mapped permanent water (class 80): 8,346 cells; land cover class [50] (Built-up): 2,473 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find cropland but not permanent water",
+          "conditions": "land_cover_class, NOT water",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND NOT water(class [80])",
+          "matched_cell_count": 8335,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_fraction": 0.8335,
+          "message": "Within the selected ROI, 83.4% of analysed cells (8,335 cells, 7.502 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND NOT water(class [80]). Per condition: land cover class [40] (Cropland): 9,210 cells; NOT NOT water (WorldCover class [80]): 11,025 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Where are the suitable agricultural areas near water?",
+          "conditions": "land_cover_class, water_proximity",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 884,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 10000,
+          "matched_fraction": 0.0884,
+          "message": "Within the selected ROI, 8.8% of analysed cells (884 cells, 0.796 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND water_proximity(<= 1000 m, class 80). Per condition: land cover class [40] (Cropland): 23,626 cells; within 1000 m of mapped permanent water (class 80): 8,346 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find cotton land with reliable irrigation",
+          "conditions": "unsupported",
+          "execution_status": "UNSUPPORTED_CONDITION",
+          "result_status": null,
+          "message": "I can evaluate proximity to mapped surface water, but reliable irrigation availability is not currently measured. Nothing was computed: a proxy would be misleading.",
+          "matched_cell_count": null,
+          "insufficient_cell_count": null,
+          "analysed_cell_count": null
+        },
+        {
+          "query": "Find areas that are not flood-prone",
+          "conditions": "unsupported",
+          "execution_status": "UNSUPPORTED_CONDITION",
+          "result_status": null,
+          "message": "Flood analysis is not available yet. I will not estimate flood risk from permanent water: they are different things. Nothing was computed: a proxy would be misleading.",
+          "matched_cell_count": null,
+          "insufficient_cell_count": null,
+          "analysed_cell_count": null
+        }
+      ],
+      "checks": {
+        "proximity": {
+          "window_cells": [
+            171,
+            171
+          ],
+          "pixel_m": 30.0,
+          "requested_distance_m": 1000.0,
+          "water_cells_in_window": 72,
+          "max_distance_on_water_m": 0.0,
+          "cells_compared": 5784,
+          "agreement": 5784,
+          "agreement_pct": 100.0,
+          "just_inside_cells": 81,
+          "just_inside_engine_true": 81,
+          "just_outside_cells": 81,
+          "just_outside_engine_true": 0,
+          "brute_min_m": 0.0,
+          "brute_max_m": 1988.164983093707,
+          "orthogonal_probes": {
+            "1": 0.0,
+            "2": 30.0,
+            "5": 0.0
+          },
+          "orthogonal_max_deviation_m": 150.0,
+          "orthogonal_violations": 0
+        },
+        "combinations": {
+          "cotton AND near-water": {
+            "window": [
+              105,
+              105
+            ],
+            "cells_compared": 10000,
+            "identical": true,
+            "engine_true": 0,
+            "expected_true": 0,
+            "engine_insufficient": 0,
+            "expected_insufficient": 0
+          },
+          "cropland AND near-water": {
+            "window": [
+              171,
+              171
+            ],
+            "cells_compared": 10000,
+            "identical": true,
+            "engine_true": 884,
+            "expected_true": 884,
+            "engine_insufficient": 0,
+            "expected_insufficient": 0
+          },
+          "cropland AND NOT water": {
+            "window": [
+              105,
+              105
+            ],
+            "cells_compared": 10000,
+            "identical": true,
+            "engine_true": 8335,
+            "expected_true": 8335,
+            "engine_insufficient": 0,
+            "expected_insufficient": 0
+          },
+          "NOT water != NOT near-water": {
+            "NOT water TRUE cells": 8335,
+            "NOT near-water TRUE cells": 1243,
+            "identical": false
+          }
+        },
+        "cotton": {
+          "identical": true,
+          "cells": 11025,
+          "engine_true": 0,
+          "expected_true": 0,
+          "engine_insufficient": 1025,
+          "expected_insufficient": 1025,
+          "phase8_classes_in_roi": {
+            "0": 0,
+            "1": 10000
+          }
+        }
+      }
+    },
+    "AOI-2": {
+      "bounds": [
+        377200.0,
+        3441820.0,
+        397680.0,
+        3462300.0
+      ],
+      "worldcover": {
+        "record": {
+          "dataset": "worldcover",
+          "version": "v200_2021",
+          "variable": "land_cover",
+          "native_resolution": "10 m",
+          "native_crs": "EPSG:4326",
+          "units": "class code",
+          "temporal_period": "2021 epoch",
+          "source_url": "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_N30E030_Map.tif",
+          "license": "CC BY 4.0 (ESA WorldCover project; doi 10.5281/zenodo.7254221)",
+          "access_date": "2026-09-14",
+          "source_nodata": null,
+          "resampling": "nearest",
+          "processing": "windowed read; nearest-neighbour reprojection (categorical)",
+          "limitations": "Thematic accuracy ~75% globally; class 40 'cropland' means ANY crop in 2021 (not cotton, not currently cultivated); v100 (2020) and v200 (2021) use different algorithms and must not be compared.",
+          "dataset_status": "literature-backed"
+        },
+        "classes": {
+          "10": 774,
+          "20": 360,
+          "30": 2619,
+          "40": 326369,
+          "50": 47522,
+          "60": 1777,
+          "80": 33329,
+          "90": 59219
+        },
+        "grid": {
+          "crs": "EPSG:32636",
+          "resolution_m": 30.0,
+          "requested_resolution_m": 30.0,
+          "width": 687,
+          "height": 687,
+          "cells": 471969,
+          "bounds": [
+            377130.0,
+            3441750.0,
+            397740.0,
+            3462360.0
+          ],
+          "transform": [
+            30.0,
+            0.0,
+            377130.0,
+            0.0,
+            -30.0,
+            3462360.0
+          ],
+          "coarsened": false,
+          "note": ""
+        },
+        "from_cache": true,
+        "seconds": 0.004511693000040395
+      },
+      "cases": [
+        {
+          "case": "1. cotton suitability alone",
+          "query": "Find areas suitable for cotton",
+          "status": "OK",
+          "result_status": "zero_matches",
+          "expression": "cotton_suitability(cotton, class >= 3, rainfed)",
+          "matched_cell_count": 0,
+          "non_matching_cell_count": 464900,
+          "insufficient_cell_count": 1589,
+          "analysed_cell_count": 464900,
+          "matched_area_m2": 0.0,
+          "matched_fraction": 0.0,
+          "insufficient_fraction": 0.003406296825862989,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 cotton_suitability(cotton, class >= 3, rainfed). That is a statement about the selected area, not about the surrounding region. For 0.3% of cells the required data was missing or undecidable (insufficient data), so no claim is made about them; they are counted as neither matching nor non-matching. Per condition: cotton suitability (class >= 3, rainfed): 0 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [
+            "29.6% of the area is a hard land-cover constraint (Cropland) and is screened as Unsuitable, not scored.",
+            "The area is very flat with a clay-rich topsoil, so natural drainage may be poor. Drainage was not measured; this is a risk flag derived from slope and texture, not a scored factor.",
+            "Critical-factor veto: growing_season_precipitation is outside the absolute tolerance range for cotton, so the area is screened as Unsuitable regardless of the weighted score (0.66).",
+            "The soil layer is native 250 m but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~250 m.",
+            "The climate layer is native ~1 km but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~~1 km.",
+            "This is an experimental screening of long-term, static public data. It is not a crop recommendation, a yield prediction, a soil diagnosis or an irrigation-availability statement, and it must be validated with local agronomic and field information before it means anything on the ground."
+          ],
+          "performance": {
+            "timings": {
+              "suitability_seconds": 0.565250667999976,
+              "roi_mask_seconds": 0.6254588419999436,
+              "total_seconds": 0.6273577339999292
+            },
+            "cells": 471969,
+            "conditions": 1,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              377130.0,
+              0.0,
+              -30.0,
+              3462360.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 687,
+            "height": 687,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "cotton suitability (class >= 3, rainfed)",
+              "source": "phase8:cotton_suitability",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  377130.0,
+                  0.0,
+                  -30.0,
+                  3462360.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 687,
+                "height": 687,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 464900,
+                "cells_in_scope": 471969,
+                "matching_cells": 0,
+                "non_matching_cells": 464900,
+                "insufficient_cells": 7069,
+                "valid_cells": 464900,
+                "matched_fraction": 0.0,
+                "insufficient_fraction": 0.01497767861872284,
+                "matched_area_m2": 0.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "min_class": 3,
+                "insufficient_code": 0,
+                "scenario": "rainfed",
+                "crop": "cotton"
+              },
+              "scenario": "rainfed",
+              "min_class": 3,
+              "class_label": "class >= 3",
+              "analysis_resolution_m": 30.0,
+              "condition": "crop_suitability",
+              "negated": false,
+              "evidence": [
+                "suitable for cotton"
+              ],
+              "interpretation": "\"suitable for cotton\" means the Phase 8 screening class is Moderately suitable or better, computed for rainfed conditions. Marginal areas are excluded on purpose.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "2. permanent water alone",
+          "query": "Find water",
+          "status": "OK",
+          "result_status": "ok",
+          "expression": "water(class [80])",
+          "matched_cell_count": 32731,
+          "non_matching_cell_count": 433758,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_area_m2": 29457900.0,
+          "matched_fraction": 0.07016456979692984,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 7.0% of analysed cells (32,731 cells, 29.458 km\u00b2) satisfy all requested conditions \u2014 water(class [80]). Per condition: water (WorldCover class [80]): 33,329 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [],
+          "performance": {
+            "timings": {
+              "grid_seconds": 0.00031043600006341876,
+              "roi_mask_seconds": 0.061454163999997036,
+              "landcover_seconds": 0.004736241000045993,
+              "total_seconds": 0.06846512399999938
+            },
+            "cells": 471969,
+            "conditions": 1,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              377130.0,
+              0.0,
+              -30.0,
+              3462360.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 687,
+            "height": 687,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "water (WorldCover class [80])",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  377130.0,
+                  0.0,
+                  -30.0,
+                  3462360.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 687,
+                "height": 687,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 471969,
+                "cells_in_scope": 471969,
+                "matching_cells": 33329,
+                "non_matching_cells": 438640,
+                "insufficient_cells": 0,
+                "valid_cells": 471969,
+                "matched_fraction": 0.07061692611167258,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 29996100.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "water_class": 80,
+                "wetland_class_excluded": 90
+              },
+              "condition": "water",
+              "negated": false,
+              "evidence": [
+                "water"
+              ],
+              "interpretation": "\"water\" means the cell itself is mapped as permanent surface water (WorldCover class 80, 2021). It is not flooding, not irrigation, not groundwater and not soil moisture. Herbaceous wetland (class 90) is a different class and is deliberately excluded.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "3. near permanent water (default distance)",
+          "query": "Find areas near water",
+          "status": "OK",
+          "result_status": "ok",
+          "expression": "water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 165809,
+          "non_matching_cell_count": 300680,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_area_m2": 149228100.0,
+          "matched_fraction": 0.3554403212080028,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 35.5% of analysed cells (165,809 cells, 149.228 km\u00b2) satisfy all requested conditions \u2014 water_proximity(<= 1000 m, class 80). Per condition: within 1000 m of mapped permanent water (class 80): 198,896 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [],
+          "performance": {
+            "timings": {
+              "grid_seconds": 0.0003289850000101069,
+              "roi_mask_seconds": 0.06052596699998958,
+              "landcover_seconds": 0.00499355200008722,
+              "water_mask_seconds": 0.0007209000000329979,
+              "total_seconds": 0.11071906900008344
+            },
+            "cells": 567009,
+            "conditions": 1,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              376140.0,
+              0.0,
+              -30.0,
+              3463350.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 753,
+            "height": 753,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "within 1000 m of mapped permanent water (class 80)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  376140.0,
+                  0.0,
+                  -30.0,
+                  3463350.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 753,
+                "height": 753,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 503075,
+                "cells_in_scope": 567009,
+                "matching_cells": 198896,
+                "non_matching_cells": 304179,
+                "insufficient_cells": 63934,
+                "valid_cells": 503075,
+                "matched_fraction": 0.39536053272374894,
+                "insufficient_fraction": 0.11275658763793872,
+                "matched_area_m2": 179006400.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "distance_m": 1000.0,
+                "method": "scipy.ndimage.distance_transform_edt on the projected analysis grid, distance between cell centres, in metres",
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "source_water_class": 80,
+                "water_cells_found": 44233,
+                "edge_rule": "a cell is only FALSE when the nearest unknown cell or the window edge is farther away than the threshold; otherwise the answer is INSUFFICIENT, because water just outside the window cannot be ruled out",
+                "undecidable_cells": 63934
+              },
+              "condition": "water_proximity",
+              "negated": false,
+              "evidence": [
+                "near",
+                "water"
+              ],
+              "interpretation": "\"near water\" means proximity to mapped permanent surface water only. It is NOT irrigation availability, groundwater, canal access, soil moisture or waterlogging, and it says nothing about a reliable water supply.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "4. cotton AND near permanent water",
+          "query": "Find cotton areas near water",
+          "status": "OK",
+          "result_status": "zero_matches",
+          "expression": "cotton_suitability(cotton, class >= 3, rainfed) AND water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 0,
+          "non_matching_cell_count": 465689,
+          "insufficient_cell_count": 800,
+          "analysed_cell_count": 465689,
+          "matched_area_m2": 0.0,
+          "matched_fraction": 0.0,
+          "insufficient_fraction": 0.0017149386159159166,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 cotton_suitability(cotton, class >= 3, rainfed) AND water_proximity(<= 1000 m, class 80). That is a statement about the selected area, not about the surrounding region. For 0.2% of cells the required data was missing or undecidable (insufficient data), so no claim is made about them; they are counted as neither matching nor non-matching. Per condition: cotton suitability (class >= 3, rainfed): 0 cells; within 1000 m of mapped permanent water (class 80): 201,616 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [
+            "29.6% of the area is a hard land-cover constraint (Cropland) and is screened as Unsuitable, not scored.",
+            "The area is very flat with a clay-rich topsoil, so natural drainage may be poor. Drainage was not measured; this is a risk flag derived from slope and texture, not a scored factor.",
+            "Critical-factor veto: growing_season_precipitation is outside the absolute tolerance range for cotton, so the area is screened as Unsuitable regardless of the weighted score (0.66).",
+            "The soil layer is native 250 m but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~250 m.",
+            "The climate layer is native ~1 km but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~~1 km.",
+            "This is an experimental screening of long-term, static public data. It is not a crop recommendation, a yield prediction, a soil diagnosis or an irrigation-availability statement, and it must be validated with local agronomic and field information before it means anything on the ground.",
+            "Permanent-water proximity was computed on a buffered WorldCover window (759x759 cells, +36 cells per side = 1080 m) and cropped back to the 687x687 analysis grid."
+          ],
+          "performance": {
+            "timings": {
+              "suitability_seconds": 4.286000034880999e-06,
+              "roi_mask_seconds": 0.059480387000007795,
+              "landcover_seconds": 0.005310919999942598,
+              "water_mask_seconds": 0.0008326210000859646,
+              "total_seconds": 0.11320169800001167
+            },
+            "cells": 471969,
+            "conditions": 2,
+            "window": {
+              "buffer_cells": 36,
+              "source_window_cells": [
+                759,
+                759
+              ],
+              "analysis_window_cells": [
+                687,
+                687
+              ],
+              "buffer_metres": 1080.0
+            }
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              377130.0,
+              0.0,
+              -30.0,
+              3462360.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 687,
+            "height": 687,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "cotton suitability (class >= 3, rainfed)",
+              "source": "phase8:cotton_suitability",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  377130.0,
+                  0.0,
+                  -30.0,
+                  3462360.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 687,
+                "height": 687,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 464900,
+                "cells_in_scope": 471969,
+                "matching_cells": 0,
+                "non_matching_cells": 464900,
+                "insufficient_cells": 7069,
+                "valid_cells": 464900,
+                "matched_fraction": 0.0,
+                "insufficient_fraction": 0.01497767861872284,
+                "matched_area_m2": 0.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "min_class": 3,
+                "insufficient_code": 0,
+                "scenario": "rainfed",
+                "crop": "cotton"
+              },
+              "scenario": "rainfed",
+              "min_class": 3,
+              "class_label": "class >= 3",
+              "analysis_resolution_m": 30.0,
+              "condition": "crop_suitability",
+              "negated": false,
+              "evidence": [
+                "cotton",
+                "cotton areas"
+              ],
+              "interpretation": "\"suitable for cotton\" means the Phase 8 screening class is Moderately suitable or better, computed for rainfed conditions. Marginal areas are excluded on purpose.",
+              "status": "supported"
+            },
+            {
+              "name": "within 1000 m of mapped permanent water (class 80)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  376050.0,
+                  0.0,
+                  -30.0,
+                  3463440.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 759,
+                "height": 759,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 511118,
+                "cells_in_scope": 576081,
+                "matching_cells": 201616,
+                "non_matching_cells": 309502,
+                "insufficient_cells": 64963,
+                "valid_cells": 511118,
+                "matched_fraction": 0.3944607703113567,
+                "insufficient_fraction": 0.11276712823370325,
+                "matched_area_m2": 181454400.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "distance_m": 1000.0,
+                "method": "scipy.ndimage.distance_transform_edt on the projected analysis grid, distance between cell centres, in metres",
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "source_water_class": 80,
+                "water_cells_found": 45462,
+                "edge_rule": "a cell is only FALSE when the nearest unknown cell or the window edge is farther away than the threshold; otherwise the answer is INSUFFICIENT, because water just outside the window cannot be ruled out",
+                "undecidable_cells": 64963
+              },
+              "condition": "water_proximity",
+              "negated": false,
+              "evidence": [
+                "near",
+                "water"
+              ],
+              "interpretation": "\"near water\" means proximity to mapped permanent surface water only. It is NOT irrigation availability, groundwater, canal access, soil moisture or waterlogging, and it says nothing about a reliable water supply.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "5. cropland AND near permanent water",
+          "query": "Find cropland near water",
+          "status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 78450,
+          "non_matching_cell_count": 388039,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_area_m2": 70605000.0,
+          "matched_fraction": 0.16817116802325457,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 16.8% of analysed cells (78,450 cells, 70.605 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND water_proximity(<= 1000 m, class 80). Per condition: land cover class [40] (Cropland): 384,623 cells; within 1000 m of mapped permanent water (class 80): 198,896 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [],
+          "performance": {
+            "timings": {
+              "grid_seconds": 0.00034060500001942273,
+              "roi_mask_seconds": 0.06004339399999026,
+              "landcover_seconds": 0.005546963000028882,
+              "water_mask_seconds": 0.0006083659999376323,
+              "total_seconds": 0.11571782299995448
+            },
+            "cells": 567009,
+            "conditions": 2,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              376140.0,
+              0.0,
+              -30.0,
+              3463350.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 753,
+            "height": 753,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "land cover class [40] (Cropland)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  376140.0,
+                  0.0,
+                  -30.0,
+                  3463350.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 753,
+                "height": 753,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 567009,
+                "cells_in_scope": 567009,
+                "matching_cells": 384623,
+                "non_matching_cells": 182386,
+                "insufficient_cells": 0,
+                "valid_cells": 567009,
+                "matched_fraction": 0.6783366754319596,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 346160700.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "classes": [
+                  40
+                ]
+              },
+              "condition": "land_cover_class",
+              "negated": false,
+              "evidence": [
+                "cropland"
+              ],
+              "interpretation": "\"cropland\" is the 2021 land-cover class only. It means the land was mapped as some crop in 2021; it is NOT a statement about suitability.",
+              "status": "supported"
+            },
+            {
+              "name": "within 1000 m of mapped permanent water (class 80)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  376140.0,
+                  0.0,
+                  -30.0,
+                  3463350.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 753,
+                "height": 753,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 503075,
+                "cells_in_scope": 567009,
+                "matching_cells": 198896,
+                "non_matching_cells": 304179,
+                "insufficient_cells": 63934,
+                "valid_cells": 503075,
+                "matched_fraction": 0.39536053272374894,
+                "insufficient_fraction": 0.11275658763793872,
+                "matched_area_m2": 179006400.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "distance_m": 1000.0,
+                "method": "scipy.ndimage.distance_transform_edt on the projected analysis grid, distance between cell centres, in metres",
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "source_water_class": 80,
+                "water_cells_found": 44233,
+                "edge_rule": "a cell is only FALSE when the nearest unknown cell or the window edge is farther away than the threshold; otherwise the answer is INSUFFICIENT, because water just outside the window cannot be ruled out",
+                "undecidable_cells": 63934
+              },
+              "condition": "water_proximity",
+              "negated": false,
+              "evidence": [
+                "near",
+                "water"
+              ],
+              "interpretation": "\"near water\" means proximity to mapped permanent surface water only. It is NOT irrigation availability, groundwater, canal access, soil moisture or waterlogging, and it says nothing about a reliable water supply.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "6. cropland AND NOT permanent water",
+          "query": "Find cropland excluding water",
+          "status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND NOT water(class [80])",
+          "matched_cell_count": 322951,
+          "non_matching_cell_count": 143538,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_area_m2": 290655900.0,
+          "matched_fraction": 0.6923014261858265,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 69.2% of analysed cells (322,951 cells, 290.656 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND NOT water(class [80]). Per condition: land cover class [40] (Cropland): 326,369 cells; NOT NOT water (WorldCover class [80]): 438,640 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [],
+          "performance": {
+            "timings": {
+              "grid_seconds": 0.0003418180000380744,
+              "roi_mask_seconds": 0.06401808400005393,
+              "landcover_seconds": 0.005022377000045708,
+              "total_seconds": 0.07869850800000222
+            },
+            "cells": 471969,
+            "conditions": 2,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              377130.0,
+              0.0,
+              -30.0,
+              3462360.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 687,
+            "height": 687,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "land cover class [40] (Cropland)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  377130.0,
+                  0.0,
+                  -30.0,
+                  3462360.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 687,
+                "height": 687,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 471969,
+                "cells_in_scope": 471969,
+                "matching_cells": 326369,
+                "non_matching_cells": 145600,
+                "insufficient_cells": 0,
+                "valid_cells": 471969,
+                "matched_fraction": 0.6915051624153281,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 293732100.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "classes": [
+                  40
+                ]
+              },
+              "condition": "land_cover_class",
+              "negated": false,
+              "evidence": [
+                "cropland"
+              ],
+              "interpretation": "\"cropland\" is the 2021 land-cover class only. It means the land was mapped as some crop in 2021; it is NOT a statement about suitability.",
+              "status": "supported"
+            },
+            {
+              "name": "NOT NOT water (WorldCover class [80])",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  377130.0,
+                  0.0,
+                  -30.0,
+                  3462360.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 687,
+                "height": 687,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 471969,
+                "cells_in_scope": 471969,
+                "matching_cells": 438640,
+                "non_matching_cells": 33329,
+                "insufficient_cells": 0,
+                "valid_cells": 471969,
+                "matched_fraction": 0.9293830738883274,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 394776000.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "negated_from": "NOT water (WorldCover class [80])"
+              },
+              "condition": "water",
+              "negated": true,
+              "evidence": [
+                "water",
+                "excluding"
+              ],
+              "interpretation": "\"water\" means the cell itself is mapped as permanent surface water (WorldCover class 80, 2021). It is not flooding, not irrigation, not groundwater and not soil moisture. Herbaceous wetland (class 90) is a different class and is deliberately excluded.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "7. zero-match by construction",
+          "query": "Find cropland and water",
+          "status": "OK",
+          "result_status": "zero_matches",
+          "expression": "land_cover([40]) AND water(class [80])",
+          "matched_cell_count": 0,
+          "non_matching_cell_count": 466489,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_area_m2": 0.0,
+          "matched_fraction": 0.0,
+          "insufficient_fraction": 0.0,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 land_cover([40]) AND water(class [80]). That is a statement about the selected area, not about the surrounding region. Per condition: land cover class [40] (Cropland): 326,369 cells; water (WorldCover class [80]): 33,329 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [],
+          "performance": {
+            "timings": {
+              "grid_seconds": 0.00033283799996297603,
+              "roi_mask_seconds": 0.06181707100006406,
+              "landcover_seconds": 0.0051520490000029895,
+              "total_seconds": 0.07622594899999058
+            },
+            "cells": 471969,
+            "conditions": 2,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              377130.0,
+              0.0,
+              -30.0,
+              3462360.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 687,
+            "height": 687,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "land cover class [40] (Cropland)",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  377130.0,
+                  0.0,
+                  -30.0,
+                  3462360.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 687,
+                "height": 687,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 471969,
+                "cells_in_scope": 471969,
+                "matching_cells": 326369,
+                "non_matching_cells": 145600,
+                "insufficient_cells": 0,
+                "valid_cells": 471969,
+                "matched_fraction": 0.6915051624153281,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 293732100.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "classes": [
+                  40
+                ]
+              },
+              "condition": "land_cover_class",
+              "negated": false,
+              "evidence": [
+                "cropland"
+              ],
+              "interpretation": "\"cropland\" is the 2021 land-cover class only. It means the land was mapped as some crop in 2021; it is NOT a statement about suitability.",
+              "status": "supported"
+            },
+            {
+              "name": "water (WorldCover class [80])",
+              "source": "ESA WorldCover 2021 v200 (10 m)",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  377130.0,
+                  0.0,
+                  -30.0,
+                  3462360.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 687,
+                "height": 687,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 471969,
+                "cells_in_scope": 471969,
+                "matching_cells": 33329,
+                "non_matching_cells": 438640,
+                "insufficient_cells": 0,
+                "valid_cells": 471969,
+                "matched_fraction": 0.07061692611167258,
+                "insufficient_fraction": 0.0,
+                "matched_area_m2": 29996100.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "water_class": 80,
+                "wetland_class_excluded": 90
+              },
+              "condition": "water",
+              "negated": false,
+              "evidence": [
+                "water"
+              ],
+              "interpretation": "\"water\" means the cell itself is mapped as permanent surface water (WorldCover class 80, 2021). It is not flooding, not irrigation, not groundwater and not soil moisture. Herbaceous wetland (class 90) is a different class and is deliberately excluded.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "8. insufficient data (cotton)",
+          "query": "Find areas suitable for cotton",
+          "status": "OK",
+          "result_status": "zero_matches",
+          "expression": "cotton_suitability(cotton, class >= 3, rainfed)",
+          "matched_cell_count": 0,
+          "non_matching_cell_count": 464900,
+          "insufficient_cell_count": 1589,
+          "analysed_cell_count": 464900,
+          "matched_area_m2": 0.0,
+          "matched_fraction": 0.0,
+          "insufficient_fraction": 0.003406296825862989,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 cotton_suitability(cotton, class >= 3, rainfed). That is a statement about the selected area, not about the surrounding region. For 0.3% of cells the required data was missing or undecidable (insufficient data), so no claim is made about them; they are counted as neither matching nor non-matching. Per condition: cotton suitability (class >= 3, rainfed): 0 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction.",
+          "warnings": [
+            "29.6% of the area is a hard land-cover constraint (Cropland) and is screened as Unsuitable, not scored.",
+            "The area is very flat with a clay-rich topsoil, so natural drainage may be poor. Drainage was not measured; this is a risk flag derived from slope and texture, not a scored factor.",
+            "Critical-factor veto: growing_season_precipitation is outside the absolute tolerance range for cotton, so the area is screened as Unsuitable regardless of the weighted score (0.66).",
+            "The soil layer is native 250 m but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~250 m.",
+            "The climate layer is native ~1 km but is shown on a 30 m analysis grid. Resampling does not create detail: effective information resolution remains ~~1 km.",
+            "This is an experimental screening of long-term, static public data. It is not a crop recommendation, a yield prediction, a soil diagnosis or an irrigation-availability statement, and it must be validated with local agronomic and field information before it means anything on the ground."
+          ],
+          "performance": {
+            "timings": {
+              "suitability_seconds": 3.984000045420544e-06,
+              "roi_mask_seconds": 0.06505948400001671,
+              "total_seconds": 0.06713055800003076
+            },
+            "cells": 471969,
+            "conditions": 1,
+            "window": {}
+          },
+          "grid": {
+            "crs": "EPSG:32636",
+            "transform": [
+              30.0,
+              0.0,
+              377130.0,
+              0.0,
+              -30.0,
+              3462360.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "width": 687,
+            "height": 687,
+            "pixel_size_m": [
+              30.0,
+              30.0
+            ],
+            "cell_area_m2": 900.0,
+            "resolution_m": 30.0,
+            "requested_resolution_m": 30.0,
+            "note": "",
+            "source_resolutions": {}
+          },
+          "condition_results": [
+            {
+              "name": "cotton suitability (class >= 3, rainfed)",
+              "source": "phase8:cotton_suitability",
+              "grid": {
+                "crs": "EPSG:32636",
+                "transform": [
+                  30.0,
+                  0.0,
+                  377130.0,
+                  0.0,
+                  -30.0,
+                  3462360.0,
+                  0.0,
+                  0.0,
+                  1.0
+                ],
+                "width": 687,
+                "height": 687,
+                "pixel_size_m": [
+                  30.0,
+                  30.0
+                ],
+                "cell_area_m2": 900.0,
+                "resolution_m": 30.0,
+                "requested_resolution_m": 30.0,
+                "note": "",
+                "source_resolutions": {}
+              },
+              "counts": {
+                "cells_analysed": 464900,
+                "cells_in_scope": 471969,
+                "matching_cells": 0,
+                "non_matching_cells": 464900,
+                "insufficient_cells": 7069,
+                "valid_cells": 464900,
+                "matched_fraction": 0.0,
+                "insufficient_fraction": 0.01497767861872284,
+                "matched_area_m2": 0.0,
+                "cell_area_m2": 900.0
+              },
+              "provenance": {
+                "min_class": 3,
+                "insufficient_code": 0,
+                "scenario": "rainfed",
+                "crop": "cotton"
+              },
+              "scenario": "rainfed",
+              "min_class": 3,
+              "class_label": "class >= 3",
+              "analysis_resolution_m": 30.0,
+              "condition": "crop_suitability",
+              "negated": false,
+              "evidence": [
+                "suitable for cotton"
+              ],
+              "interpretation": "\"suitable for cotton\" means the Phase 8 screening class is Moderately suitable or better, computed for rainfed conditions. Marginal areas are excluded on purpose.",
+              "status": "supported"
+            }
+          ]
+        },
+        {
+          "case": "9a. unsupported: irrigation",
+          "query": "Find cotton areas with irrigation",
+          "status": "UNSUPPORTED_CONDITION",
+          "message": "I can evaluate proximity to mapped surface water, but reliable irrigation availability is not currently measured. Nothing was computed: a proxy would be misleading.",
+          "result": null
+        },
+        {
+          "case": "9b. unsupported: flood",
+          "query": "Find cotton areas outside flood-prone zones",
+          "status": "UNSUPPORTED_CONDITION",
+          "message": "Flood analysis is not available yet. I will not estimate flood risk from permanent water: they are different things. Nothing was computed: a proxy would be misleading.",
+          "result": null
+        }
+      ],
+      "gallery": [
+        {
+          "query": "Find cropland near water",
+          "conditions": "land_cover_class, water_proximity",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 78450,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_fraction": 0.16817116802325457,
+          "message": "Within the selected ROI, 16.8% of analysed cells (78,450 cells, 70.605 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND water_proximity(<= 1000 m, class 80). Per condition: land cover class [40] (Cropland): 384,623 cells; within 1000 m of mapped permanent water (class 80): 198,896 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find areas suitable for cotton near water",
+          "conditions": "crop_suitability, water_proximity",
+          "execution_status": "OK",
+          "result_status": "zero_matches",
+          "expression": "cotton_suitability(cotton, class >= 3, rainfed) AND water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 0,
+          "insufficient_cell_count": 800,
+          "analysed_cell_count": 465689,
+          "matched_fraction": 0.0,
+          "message": "Within the selected ROI, 0% of analysed cells satisfy all requested conditions \u2014 cotton_suitability(cotton, class >= 3, rainfed) AND water_proximity(<= 1000 m, class 80). That is a statement about the selected area, not about the surrounding region. For 0.2% of cells the required data was missing or undecidable (insufficient data), so no claim is made about them; they are counted as neither matching nor non-matching. Per condition: cotton suitability (class >= 3, rainfed): 0 cells; within 1000 m of mapped permanent water (class 80): 201,616 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find cropland excluding water",
+          "conditions": "land_cover_class, NOT water",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND NOT water(class [80])",
+          "matched_cell_count": 322951,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_fraction": 0.6923014261858265,
+          "message": "Within the selected ROI, 69.2% of analysed cells (322,951 cells, 290.656 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND NOT water(class [80]). Per condition: land cover class [40] (Cropland): 326,369 cells; NOT NOT water (WorldCover class [80]): 438,640 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find permanent water",
+          "conditions": "water",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "water(class [80])",
+          "matched_cell_count": 32731,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_fraction": 0.07016456979692984,
+          "message": "Within the selected ROI, 7.0% of analysed cells (32,731 cells, 29.458 km\u00b2) satisfy all requested conditions \u2014 water(class [80]). Per condition: water (WorldCover class [80]): 33,329 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find built-up areas near water",
+          "conditions": "water_proximity, land_cover_class",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "water_proximity(<= 1000 m, class 80) AND land_cover([50])",
+          "matched_cell_count": 19103,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_fraction": 0.04095059047480219,
+          "message": "Within the selected ROI, 4.1% of analysed cells (19,103 cells, 17.193 km\u00b2) satisfy all requested conditions \u2014 water_proximity(<= 1000 m, class 80) AND land_cover([50]). Per condition: within 1000 m of mapped permanent water (class 80): 198,896 cells; land cover class [50] (Built-up): 55,248 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find cropland but not permanent water",
+          "conditions": "land_cover_class, NOT water",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND NOT water(class [80])",
+          "matched_cell_count": 322951,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_fraction": 0.6923014261858265,
+          "message": "Within the selected ROI, 69.2% of analysed cells (322,951 cells, 290.656 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND NOT water(class [80]). Per condition: land cover class [40] (Cropland): 326,369 cells; NOT NOT water (WorldCover class [80]): 438,640 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Where are the suitable agricultural areas near water?",
+          "conditions": "land_cover_class, water_proximity",
+          "execution_status": "OK",
+          "result_status": "ok",
+          "expression": "land_cover([40]) AND water_proximity(<= 1000 m, class 80)",
+          "matched_cell_count": 78450,
+          "insufficient_cell_count": 0,
+          "analysed_cell_count": 466489,
+          "matched_fraction": 0.16817116802325457,
+          "message": "Within the selected ROI, 16.8% of analysed cells (78,450 cells, 70.605 km\u00b2) satisfy all requested conditions \u2014 land_cover([40]) AND water_proximity(<= 1000 m, class 80). Per condition: land cover class [40] (Cropland): 384,623 cells; within 1000 m of mapped permanent water (class 80): 198,896 cells. This is a screening result from mapped datasets, not a recommendation and not a prediction."
+        },
+        {
+          "query": "Find cotton land with reliable irrigation",
+          "conditions": "unsupported",
+          "execution_status": "UNSUPPORTED_CONDITION",
+          "result_status": null,
+          "message": "I can evaluate proximity to mapped surface water, but reliable irrigation availability is not currently measured. Nothing was computed: a proxy would be misleading.",
+          "matched_cell_count": null,
+          "insufficient_cell_count": null,
+          "analysed_cell_count": null
+        },
+        {
+          "query": "Find areas that are not flood-prone",
+          "conditions": "unsupported",
+          "execution_status": "UNSUPPORTED_CONDITION",
+          "result_status": null,
+          "message": "Flood analysis is not available yet. I will not estimate flood risk from permanent water: they are different things. Nothing was computed: a proxy would be misleading.",
+          "matched_cell_count": null,
+          "insufficient_cell_count": null,
+          "analysed_cell_count": null
+        }
+      ],
+      "checks": {
+        "proximity": {
+          "window_cells": [
+            753,
+            753
+          ],
+          "pixel_m": 30.0,
+          "requested_distance_m": 1000.0,
+          "water_cells_in_window": 44233,
+          "max_distance_on_water_m": 0.0,
+          "cells_compared": 6400,
+          "agreement": 6400,
+          "agreement_pct": 100.0,
+          "just_inside_cells": 160,
+          "just_inside_engine_true": 160,
+          "just_outside_cells": 160,
+          "just_outside_engine_true": 0,
+          "brute_min_m": 0.0,
+          "brute_max_m": 1235.839795442759,
+          "orthogonal_probes": {
+            "1": 30.0,
+            "2": 0.0,
+            "5": 30.0,
+            "10": 0.0,
+            "20": 30.0,
+            "33": 84.8528137423857
+          },
+          "orthogonal_max_deviation_m": 905.1471862576143,
+          "orthogonal_violations": 0
+        },
+        "combinations": {
+          "cotton AND near-water": {
+            "window": [
+              687,
+              687
+            ],
+            "cells_compared": 466489,
+            "identical": true,
+            "engine_true": 0,
+            "expected_true": 0,
+            "engine_insufficient": 800,
+            "expected_insufficient": 800
+          },
+          "cropland AND near-water": {
+            "window": [
+              753,
+              753
+            ],
+            "cells_compared": 466489,
+            "identical": true,
+            "engine_true": 78450,
+            "expected_true": 78450,
+            "engine_insufficient": 0,
+            "expected_insufficient": 0
+          },
+          "cropland AND NOT water": {
+            "window": [
+              687,
+              687
+            ],
+            "cells_compared": 466489,
+            "identical": true,
+            "engine_true": 322951,
+            "expected_true": 322951,
+            "engine_insufficient": 0,
+            "expected_insufficient": 0
+          },
+          "NOT water != NOT near-water": {
+            "NOT water TRUE cells": 322951,
+            "NOT near-water TRUE cells": 204735,
+            "identical": false
+          }
+        },
+        "cotton": {
+          "identical": true,
+          "cells": 471969,
+          "engine_true": 0,
+          "expected_true": 0,
+          "engine_insufficient": 7069,
+          "expected_insufficient": 7069,
+          "phase8_classes_in_roi": {
+            "0": 1589,
+            "1": 464900
+          }
+        }
+      }
+    }
+  },
+  "peak_rss_mb": 191.953125,
+  "elapsed_seconds": 8.481427248000045,
+  "tracemalloc_peak_mb": 83.073616
+}

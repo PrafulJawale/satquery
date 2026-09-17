@@ -1,0 +1,230 @@
+# =============================================================================
+# Phase 9 -- the spatial-query GRAMMAR (vocabulary only, no numbers)
+# =============================================================================
+# Deterministic pattern matching. This is NOT a general natural-language
+# parser: it recognises the Phase 9 MVP condition vocabulary and nothing else.
+# Anything outside this vocabulary is either ignored or reported as
+# unsupported -- never guessed.
+#
+# Order of evaluation (see core/spatial_query.py):
+#   1. unsupported conditions  (they ABORT the query)
+#   2. supported conditions
+#   3. operators / negation
+# =============================================================================
+
+version: "phase9-checkpoint-b"
+
+# -----------------------------------------------------------------------------
+# 1. SUPPORTED conditions
+# -----------------------------------------------------------------------------
+conditions:
+
+  cotton_suitability:
+    phrases:
+      - "suitable for cotton"
+      - "suitable cotton"
+      - "cotton suitable"
+      - "cotton areas"
+      - "cotton land"
+      - "cotton fields"
+      - "grow cotton"
+      - "growing cotton"
+      - "cotton suitability"
+    # Bare "cotton" counts only inside a spatial query (the router has already
+    # decided the user is selecting geography, not asking for a yes/no verdict).
+    tokens:
+      - "cotton"
+
+  cropland:
+    phrases:
+      - "cropland"
+      - "agricultural land"
+      - "agriculture land"
+      - "farm land"
+      - "farmland"
+      - "cultivated land"
+      - "arable land"
+    tokens:
+      - "cropland"
+      - "farmland"
+      - "agricultural"
+      - "cultivated"
+      - "arable"
+
+  # The cell ITSELF is mapped as permanent water (class 80). Distinct from
+  # proximity: "excluding water" is this condition, "near water" is proximity.
+  water:
+    phrases:
+      - "permanent water"
+      - "surface water"
+      - "water body"
+      - "water bodies"
+      - "water pixels"
+    tokens:
+      - "water"
+
+  # PROXIMITY CUES. A proximity condition needs a cue AND the word "water"
+  # ("near water", "within 500 m of water"). Without the cue, a bare "water"
+  # mention is the WATER condition ("excluding water" = NOT class 80).
+  water_proximity:
+    phrases:
+      - "close to"
+      - "closer to"
+      - "closer than"
+      - "nearer than"
+      - "next to"
+      - "adjacent to"
+      - "distance to"
+    tokens:
+      - "near"
+      - "within"
+    # NOTE: "irrigation", "canal", "groundwater" are deliberately absent --
+    # they are unsupported conditions below and must never become proximity.
+
+  built_up:
+    phrases:
+      - "built-up"
+      - "built up"
+      - "urban areas"
+      - "urban land"
+      - "built-up areas"
+    tokens:
+      - "built"
+      - "urban"
+      - "settlement"
+      - "settlements"
+
+# -----------------------------------------------------------------------------
+# 2. UNSUPPORTED conditions -- recognised, reported, NEVER substituted
+# -----------------------------------------------------------------------------
+unsupported:
+
+  flood:
+    phrases:
+      - "flood-prone"
+      - "flood prone"
+      - "flood risk"
+      - "flooding"
+      - "flood hazard"
+    tokens:
+      - "flood"
+      - "floods"
+      - "flooded"
+      - "flooding"
+      - "inundation"
+    message: >-
+      Flood analysis is not available yet. I will not estimate flood risk from
+      permanent water: they are different things.
+    nearest_supported: null
+
+  irrigation:
+    phrases:
+      - "reliable irrigation"
+      - "irrigation available"
+      - "irrigation availability"
+      - "with reliable irrigation"
+      - "irrigation is guaranteed"
+      - "guaranteed irrigation"
+      - "irrigated land"
+      - "irrigated areas"
+      - "canal access"
+      - "canal irrigation"
+    tokens:
+      - "irrigation"
+      - "irrigated"
+    message: >-
+      I can evaluate proximity to mapped surface water, but reliable irrigation
+      availability is not currently measured.
+    blocking_message: >-
+      Irrigation availability and reliability are not measured by this system.
+      The cotton screening that IS available evaluates the configured RAINFED
+      scenario, so it cannot answer an irrigated-cotton question and no verdict
+      is returned. (Proximity to mapped surface water is a different question
+      and is never used as a stand-in for irrigation.)
+    nearest_supported: water_proximity
+
+  groundwater:
+    phrases:
+      - "groundwater"
+      - "ground water"
+      - "borewell"
+      - "bore well"
+      - "aquifer"
+      - "well water"
+    tokens:
+      - "groundwater"
+      - "aquifer"
+      - "borewell"
+    message: >-
+      Groundwater availability is not measured by this system.
+    blocking_message: >-
+      Groundwater availability is not measured by this system, and the cotton
+      screening evaluates the configured RAINFED scenario only, so no verdict is
+      returned for a groundwater-dependent question.
+    nearest_supported: null
+
+  salinity:
+    phrases:
+      - "saline soil"
+      - "soil salinity"
+      - "salinity"
+    tokens:
+      - "salinity"
+      - "saline"
+    message: >-
+      Soil salinity is not assessed: no global dataset at this resolution
+      supports it.
+    blocking_message: >-
+      Soil salinity is not assessed by this system, so no salinity-dependent
+      verdict is returned.
+    nearest_supported: null
+
+# -----------------------------------------------------------------------------
+# 3. Operators and negation
+# -----------------------------------------------------------------------------
+operators:
+  and:
+    phrases:
+      - "and"
+      - "plus"
+      - "also"
+      - "together with"
+  or:
+    phrases:
+      - "or"
+      - "either"
+  # Negation binds to the condition that follows it:
+  #   "not built-up", "excluding water", "outside built-up areas", "but not water"
+  negation:
+    phrases:
+      - "but not"
+      - "not water"
+      - "no water"
+      - "not in water"
+      - "not permanent water"
+      - "but no"
+      - "excluding"
+      - "exclude"
+      - "outside"
+      - "away from"
+      - "free of"
+      - "not near"
+      - "not in"
+      - "avoiding"
+
+# -----------------------------------------------------------------------------
+# 4. Ambiguity: interpretations the parser MAY make, but must announce
+# -----------------------------------------------------------------------------
+ambiguity:
+  water_proximity_not_irrigation:
+    phrases:
+      - "near water"
+      - "close to water"
+      - "next to water"
+      - "near the water"
+      - "within 1 km of water"
+      - "within 500 m of water"
+      - "within 2 km of water"
+    note: >-
+      Interpreting "near water" as proximity to mapped surface water, not
+      irrigation availability.

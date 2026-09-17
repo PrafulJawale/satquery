@@ -1,0 +1,78 @@
+# =============================================================================
+# Phase 11 -- NDWI definition
+# =============================================================================
+# NDWI is an INDEX CALCULATION. It is not flood detection, not water-extent
+# mapping, not water-body segmentation and not a water-quality measurement.
+#
+# There is deliberately NO water threshold in this file. A rule such as
+# "water if NDWI > 0" would turn a spectral index into an unsupported
+# water-extraction claim, and NDWI is known to over-detect water over built-up
+# surfaces (see docs/ARCHITECTURE_REVIEW.md, which recommends MNDWI for water
+# mapping -- and MNDWI needs a SWIR band this sample does not carry).
+# =============================================================================
+
+version: "phase11"
+
+name: ndwi
+short_name: "NDWI"
+display_name: "NDWI"
+label: "NDWI (Normalised Difference Water Index)"
+
+kind: normalized_difference
+
+numerator_role: green           # Green - NIR
+denominator_role: nir           # Green + NIR
+required_roles: [green, nir]
+
+role_labels:
+  green: "Green"
+  nir: "NIR"
+
+sensor_bands:
+  sentinel-2-l2a:
+    green: "B03"
+    nir: "B08"
+  landsat-c2-l2:
+    green: "B3"
+    nir: "B5"
+
+wavelengths_nm:
+  green: 560
+  nir: 842
+
+formula: "(GREEN - NIR) / (GREEN + NIR)"
+citation: "McFeeters 1996"
+
+# INHERITED from the Phase 3 NDVI convention, not invented for NDWI.
+min_denominator: 1.0e-6
+
+value_range: [-1.0, 1.0]
+colormap: "RdYlBu"              # blue = high NDWI; continuous, never categorical
+
+reflectance:
+  scale: 0.0001
+  offset: 0.0
+
+description: >-
+  A normalised ratio of green and near-infrared surface reflectance. Water
+  reflects green more than near-infrared, so open water tends to give positive
+  values while vegetation and built-up surfaces tend to give negative ones. The
+  index is continuous and this application attaches no threshold to it.
+
+caveat: >-
+  NDWI is a spectral index. This result does not by itself establish flood
+  extent, water availability, or water quality.
+
+limitations:
+  - "NDWI is an index value, not a water body, flood extent or water depth."
+  - "No water / non-water threshold is applied: this application does not classify
+     pixels as water."
+  - "NDWI over-detects water over built-up surfaces (McFeeters 1996); MNDWI
+     (Green/SWIR) is preferred for water mapping and needs a SWIR band that this
+     Sentinel-2 sample does not carry."
+  - "Water bodies smaller than a pixel, and water under vegetation canopy, are
+     not resolved at 10 m."
+  - "Cloud and cloud shadow are not masked per pixel and can produce
+     water-like or non-water-like values."
+  - "Values outside [-1, 1] indicate a scaling, band-mapping or cloud problem."
+  - "No atmospheric correction is applied beyond the source product's processing."

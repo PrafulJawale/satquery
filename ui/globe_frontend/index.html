@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SatQuery AI — globe</title>
+<link rel="stylesheet" href="https://unpkg.com/cesium@1.119/Build/Cesium/Widgets/widgets.css" />
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; }
+  body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+         Roboto, "Helvetica Neue", Arial, sans-serif; color: #0f172a; }
+  #stage { position: relative; width: 100%; overflow: hidden; border-radius: 12px;
+           border: 1px solid #e2e8f0; background: #0b1220; }
+
+  /* ---- the 3D globe, and the 2D-rendered fallback ---- */
+  #cesium { position: absolute; inset: 0; }
+  #fallback { position: absolute; left: 0; top: 0; display: none; }
+  #stage.fallback #cesium { display: none; }
+  #stage.fallback #fallback { display: block; }
+  .cesium-widget, .cesium-widget canvas { width: 100% !important; }
+
+  /* ---- controls: one rail, flat, no decoration ---- */
+  .rail { position: absolute; left: 10px; top: 46px; display: flex;
+          flex-direction: column; gap: 6px; z-index: 6; }
+  .rail button, .seg button, .panel button {
+    font: 500 12px/1 inherit; color: #0f172a; background: rgba(255,255,255,.94);
+    border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 9px; cursor: pointer;
+    backdrop-filter: blur(4px); transition: background .12s, border-color .12s, color .12s; }
+  .rail button:hover, .seg button:hover, .panel button:hover {
+    border-color: #0e7490; color: #155e75; background: #ecfeff; }
+  .rail button:focus-visible, .seg button:focus-visible, .panel button:focus-visible {
+    outline: none; box-shadow: 0 0 0 3px rgba(14,116,144,.25); }
+  .rail button[disabled] { opacity: .45; cursor: not-allowed; }
+  .rail .sq-icon { min-width: 30px; text-align: center; font-size: 14px; }
+  .seg { position: absolute; left: 10px; display: flex; gap: 0; z-index: 6;
+         border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+  .seg button { border: none; border-radius: 0; }
+  .seg button + button { border-left: 1px solid #e2e8f0; }
+  .seg button.on { background: #0e7490; color: #fff; }
+  .seg button.on:hover { background: #155e75; color: #fff; }
+  #baseSeg { bottom: 58px; }
+  #drawSeg { bottom: 26px; }
+
+  /* ---- readouts ---- */
+  #topbar { position: absolute; left: 10px; top: 10px; z-index: 6; display: flex;
+            gap: 8px; align-items: center; font-size: 12px; }
+  #brand { font-weight: 700; letter-spacing: .08em; font-size: 10px; color: #155e75;
+           background: rgba(236,254,255,.94); border: 1px solid #cffafe;
+           border-radius: 6px; padding: 4px 7px; }
+  #readout { background: rgba(255,255,255,.92); border: 1px solid #e2e8f0;
+             border-radius: 6px; padding: 4px 8px; font-variant-numeric: tabular-nums;
+             color: #334155; }
+  #hint { position: absolute; right: 10px; bottom: 8px; z-index: 5; font-size: 11px;
+          color: #e2e8f0; background: rgba(11,18,32,.55); border-radius: 6px;
+          padding: 4px 8px; max-width: 62%; text-align: right; }
+  #notice { position: absolute; left: 50%; transform: translateX(-50%); top: 10px;
+            z-index: 8; display: none; font-size: 12px; color: #7c2d12;
+            background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px;
+            padding: 6px 10px; max-width: 78%; }
+  #notice.show { display: block; }
+
+  /* ---- layers ---- */
+  .panel { position: absolute; right: 10px; top: 10px; z-index: 6; width: 190px;
+           background: rgba(255,255,255,.95); border: 1px solid #e2e8f0;
+           border-radius: 10px; padding: 8px 10px; backdrop-filter: blur(4px); }
+  .panel h4 { margin: 0 0 6px; font-size: 10px; letter-spacing: .08em;
+              text-transform: uppercase; color: #64748b; font-weight: 700; }
+  .panel label { display: flex; align-items: center; gap: 6px; font-size: 12px;
+                 color: #334155; padding: 2px 0; cursor: pointer; }
+  .panel input { accent-color: #0e7490; }
+  .panel .empty { font-size: 11px; color: #94a3b8; }
+
+  /* ---- attribution (Cesium renders provider credits in here) ---- */
+  #credits { position: absolute; right: 10px; bottom: 26px; z-index: 5;
+             font-size: 11px; color: #cbd5e1; background: rgba(11,18,32,.5);
+             border-radius: 6px; padding: 2px 8px; max-width: 60%; text-align: right; }
+  #credits a { color: #cbd5e1; }
+  #credits .cesium-credit-logoContainer { display: none !important; }
+  .cesium-credit-lightbox-overlay { display: none !important; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="cesium"></div>
+  <canvas id="fallback"></canvas>
+
+  <div id="topbar">
+    <span id="brand">GLOBE</span>
+    <span id="readout">—</span>
+  </div>
+  <div id="notice"></div>
+
+  <div class="rail">
+    <button class="sq-icon" id="zoomIn" title="Zoom in">+</button>
+    <button class="sq-icon" id="zoomOut" title="Zoom out">−</button>
+    <button class="sq-icon" id="home" title="Whole Earth">⌂</button>
+    <button id="detail" title="Switch to the flat detail map">2D map</button>
+  </div>
+
+  <div class="seg" id="baseSeg">
+    <button data-base="satellite">Satellite</button>
+    <button data-base="streets">Streets</button>
+  </div>
+  <div class="seg" id="drawSeg">
+    <button data-draw="rect">Area</button>
+    <button data-draw="clear">Clear</button>
+  </div>
+
+  <div class="panel" id="layers">
+    <h4>Analysis layers</h4>
+    <div id="layerList"><div class="empty">No raster overlays</div></div>
+  </div>
+
+  <div id="credits"></div>
+  <div id="hint">Drag to rotate · scroll to zoom · click a point to move the map</div>
+</div>
+
+<script>window.CESIUM_BASE_URL = "https://unpkg.com/cesium@1.119/Build/Cesium/";</script>
+<script src="https://unpkg.com/cesium@1.119/Build/Cesium/Cesium.js"></script>
+<script>
+"use strict";
+(function () {
+  // ===================================================================== //
+  // Streamlit component protocol, written by hand: no build step, no npm.
+  // The parent posts `streamlit:render` with the args; we post back
+  // `componentReady`, `setFrameHeight` and `setComponentValue`.
+  // ===================================================================== //
+  var eventSeq = 0;
+  var gotRender = false;
+
+  function send(type, payload) {
+    var msg = { isStreamlitMessage: true, type: type };
+    for (var k in payload) { if (Object.prototype.hasOwnProperty.call(payload, k)) msg[k] = payload[k]; }
+    try { window.parent.postMessage(msg, "*"); } catch (e) {}
+  }
+  function emit(value) { send("streamlit:setComponentValue", { value: value, dataType: "json" }); }
+  function event(type, extra) {
+    var e = extra || {};
+    e.type = type;
+    e.id = ++eventSeq;
+    emit(e);
+    return e;
+  }
+  function sendHeight() {
+    var h = document.getElementById("stage").getBoundingClientRect().height;
+    if (!h) h = parseFloat(document.getElementById("stage").style.height) || (args.height_px || 600);
+    send("streamlit:setFrameHeight", { height: Math.round(h) + 2 });
+  }
+
+  // ------------------------------------------------------------------ state
+  var args = {};
+  var stage = document.getElementById("stage");
+  var readout = document.getElementById("readout");
+  var noticeEl = document.getElementById("notice");
+  var viewer = null;
+  var baseLayer = null;
+  var overlayLayers = {};          // name -> {layer, sig}
+  var footprintEntity = null, roiEntity = null, markerEntity = null, preview = null;
+  var drawing = null;              // {mode:'rect'|'poly', points:[[lon,lat], ...]}
+  var lastFlown = "";
+
+  function notice(text) {
+    if (!text) { noticeEl.classList.remove("show"); noticeEl.textContent = ""; return; }
+    noticeEl.textContent = text;
+    noticeEl.classList.add("show");
+  }
+
+  // ===================================================================== //
+  // 1. the 3D globe (Cesium), with a 2D orthographic globe as fallback
+  // ===================================================================== //
+  var CESIUM_VERSION_OK = (typeof Cesium !== "undefined") && !!Cesium.Viewer;
+
+  function tileProvider(key, attribution) {
+    return new Cesium.UrlTemplateImageryProvider({
+      url: "/satquery-tiles/" + key + "/{z}/{x}/{y}.png",
+      credit: attribution ? new Cesium.Credit(attribution, false) : undefined,
+      maximumLevel: 18,
+      tilingScheme: new Cesium.WebMercatorTilingScheme(),
+    });
+  }
+
+  function initCesium() {
+    viewer = new Cesium.Viewer("cesium", {
+      baseLayer: false,
+      imageryProvider: false,
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+      animation: false, baseLayerPicker: false, fullscreenButton: false,
+      geocoder: false, homeButton: false, infoBox: false, sceneModePicker: false,
+      selectionIndicator: false, timeline: false, navigationHelpButton: false,
+      scene3DOnly: true, requestRenderMode: true, maximumRenderTimeChange: Infinity,
+      creditContainer: document.getElementById("credits"),
+      contextOptions: { webgl: { alpha: false, antialias: true, failIfMajorPerformanceCaveat: false } },
+    });
+    var scene = viewer.scene;
+    scene.globe.baseColor = Cesium.Color.fromCssColorString("#0b1220");
+    scene.globe.depthTestAgainstTerrain = true;
+    scene.screenSpaceCameraController.minimumZoomDistance = 300.0;
+    scene.screenSpaceCameraController.maximumZoomDistance = 4.0e7;
+    try { scene.skyAtmosphere.show = true; } catch (e) {}
+
+    // ---- camera and navigation -----------------------------------------
+    viewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(10.0, 20.0, 2.4e7),
+    });
+
+    scene.postRender.addEventListener(function () {
+      var c = viewer.camera.positionCartographic;
+      if (!c) return;
+      readout.textContent = Math.abs(Cesium.Math.toDegrees(c.latitude)).toFixed(3) + "°"
+        + (c.latitude >= 0 ? "N" : "S") + "  "
+        + Math.abs(Cesium.Math.toDegrees(c.longitude)).toFixed(3) + "°"
+        + (c.longitude >= 0 ? "E" : "W") + "  ·  "
+        + (c.height >= 10000 ? Math.round(c.height / 1000) + " km" : Math.round(c.height) + " m");
+    });
+
+    // click: report the coordinate (and, while drawing, add a vertex)
+    var handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+    handler.setInputAction(function (click) { onLeftClick(click); },
+      Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    handler.setInputAction(function (move) { onMouseMove(move); },
+      Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+    handler.setInputAction(function (dbl) { onDoubleClick(dbl); },
+      Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+
+    // A small diagnostics hook: it lets support and automated checks read the
+    // camera and test picking without reaching into Cesium's internals.
+    window.__satqueryMap = {
+      viewer: viewer,
+      pick: function (x, y) { return pickLonLat(new Cesium.Cartesian2(x, y)); },
+      camera: function () {
+        var c = viewer.camera.positionCartographic;
+        return {
+          lat: Cesium.Math.toDegrees(c.latitude),
+          lon: Cesium.Math.toDegrees(c.longitude),
+          height: c.height,
+        };
+      },
+    };
+
+    // ---- controls -------------------------------------------------------
+    document.getElementById("zoomIn").onclick = function () {
+      viewer.camera.zoomIn(viewer.camera.positionCartographic.height * 0.35);
+      scene.requestRender();
+    };
+    document.getElementById("zoomOut").onclick = function () {
+      viewer.camera.zoomOut(viewer.camera.positionCartographic.height * 0.55);
+      scene.requestRender();
+    };
+    document.getElementById("home").onclick = function () {
+      viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(10, 20, 2.4e7),
+                            duration: 1.2 });
+    };
+    Array.prototype.forEach.call(document.querySelectorAll("#baseSeg button"), function (b) {
+      b.onclick = function () { event("base", { value: b.getAttribute("data-base") }); };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#drawSeg button"), function (b) {
+      b.onclick = function () {
+        var act = b.getAttribute("data-draw");
+        if (act === "clear") { clearDrawing(); event("roi", { feature: null }); }
+        else { startDrawing(act); }
+      };
+    });
+    document.getElementById("detail").onclick = function () { event("mode", { value: "detail" }); };
+  }
+
+  function requestRender() { if (viewer) viewer.scene.requestRender(); }
+
+  // ---- base imagery ---------------------------------------------------- //
+  function setBase(key, attribution) {
+    if (!viewer) return;
+    if (baseLayer) { viewer.imageryLayers.remove(baseLayer, true); baseLayer = null; }
+    try {
+      baseLayer = viewer.imageryLayers.addImageryProvider(tileProvider(key, attribution), 0);
+    } catch (e) { notice("Imagery provider unavailable: " + e); }
+    Array.prototype.forEach.call(document.querySelectorAll("#baseSeg button"), function (b) {
+      b.classList.toggle("on", b.getAttribute("data-base") === key);
+    });
+    requestRender();
+  }
+
+  // ---- raster overlays (the analysis imagery), geographically placed ---- //
+  function overlaySignature(ov) {
+    return [ov.name, ov.image.length, ov.south, ov.west, ov.north, ov.east].join("|");
+  }
+
+  function syncOverlays(list) {
+    if (!viewer) return;
+    var seen = {};
+    (list || []).forEach(function (ov) {
+      seen[ov.name] = true;
+      var sig = overlaySignature(ov);
+      var entry = overlayLayers[ov.name];
+      if (entry && entry.sig === sig) {
+        entry.layer.alpha = ov.opacity;
+        entry.layer.show = !!ov.show;
+        return;
+      }
+      if (entry) { viewer.imageryLayers.remove(entry.layer, true); delete overlayLayers[ov.name]; }
+      try {
+        var provider = new Cesium.SingleTileImageryProvider({
+          url: ov.image,
+          rectangle: Cesium.Rectangle.fromDegrees(ov.west, ov.south, ov.east, ov.north),
+        });
+        var layer = viewer.imageryLayers.addImageryProvider(provider);
+        layer.alpha = ov.opacity;
+        layer.show = !!ov.show;
+        overlayLayers[ov.name] = { layer: layer, sig: sig };
+      } catch (e) {
+        // An overlay that cannot be drawn must not take the map down with it.
+      }
+    });
+    Object.keys(overlayLayers).forEach(function (name) {
+      if (!seen[name]) {
+        viewer.imageryLayers.remove(overlayLayers[name].layer, true);
+        delete overlayLayers[name];
+      }
+    });
+    renderLayerList(list || []);
+    requestRender();
+  }
+
+  function renderLayerList(list) {
+    var host = document.getElementById("layerList");
+    if (!list.length) { host.innerHTML = '<div class="empty">No raster overlays</div>'; return; }
+    host.innerHTML = "";
+    list.forEach(function (ov) {
+      var row = document.createElement("label");
+      var box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = !!ov.show;
+      box.onchange = function () {
+        var entry = overlayLayers[ov.name];
+        if (entry) entry.layer.show = box.checked;
+        ov.show = box.checked;
+        event("layers", { value: list.map(function (o) {
+          return { name: o.name, show: !!o.show }; }) });
+        requestRender();
+      };
+      row.appendChild(box);
+      row.appendChild(document.createTextNode(" " + ov.name));
+      host.appendChild(row);
+    });
+  }
+
+  // ---- vectors: footprint, selection, marker, drawing preview ----------- //
+  function syncVectors() {
+    if (!viewer) return;
+
+    if (footprintEntity) { viewer.entities.remove(footprintEntity); footprintEntity = null; }
+    var fp = args.footprint;
+    if (fp && fp.length === 2) {
+      footprintEntity = viewer.entities.add({
+        rectangle: {
+          coordinates: Cesium.Rectangle.fromDegrees(fp[0][1], fp[0][0], fp[1][1], fp[1][0]),
+          material: new Cesium.Color(1.0, 0.47, 0.0, 0.06),
+          outline: true, outlineWidth: 2,
+          outlineColor: Cesium.Color.fromCssColorString("#f97316"),
+        },
+      });
+    }
+
+    if (roiEntity) { viewer.entities.remove(roiEntity); roiEntity = null; }
+    var roi = args.roi;
+    if (roi && roi.coordinates && roi.coordinates[0] && roi.coordinates[0].length >= 3) {
+      var flat = [];
+      roi.coordinates[0].forEach(function (p) { flat.push(p[0], p[1]); });
+      roiEntity = viewer.entities.add({
+        polygon: {
+          hierarchy: Cesium.Cartesian3.fromDegreesArray(flat),
+          material: new Cesium.Color(0.85, 0.45, 0.13, 0.18),
+          outline: true,
+          outlineColor: Cesium.Color.fromCssColorString("#ea580c"),
+          outlineWidth: 3,
+        },
+      });
+    }
+
+    if (markerEntity) { viewer.entities.remove(markerEntity); markerEntity = null; }
+    var mk = args.marker;
+    if (mk && isFinite(mk.lat) && isFinite(mk.lon)) {
+      markerEntity = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(mk.lon, mk.lat),
+        point: {
+          pixelSize: 13, color: Cesium.Color.fromCssColorString("#d7263d"),
+          outlineColor: Cesium.Color.WHITE, outlineWidth: 2,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        label: mk.label ? {
+          text: mk.label, font: "500 12px Inter, sans-serif",
+          fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.fromCssColorString("#0f172a"), outlineWidth: 3,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          pixelOffset: new Cesium.Cartesian2(0, -18),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        } : undefined,
+      });
+    }
+    requestRender();
+  }
+
+  // ---- drawing an analysis area on the globe ---------------------------- //
+  function startDrawing(mode) {
+    drawing = { mode: mode, points: [] };
+    Array.prototype.forEach.call(document.querySelectorAll("#drawSeg button"), function (b) {
+      if (b.getAttribute("data-draw") === mode) b.classList.add("on");
+    });
+    notice(mode === "rect" ? "Click two opposite corners of the area."
+                           : "Click to add corners, double-click to finish.");
+  }
+
+  function clearDrawing() {
+    drawing = null;
+    if (preview) { viewer.entities.remove(preview); preview = null; }
+    Array.prototype.forEach.call(document.querySelectorAll("#drawSeg button"), function (b) {
+      b.classList.remove("on");
+    });
+    notice("");
+    requestRender();
+  }
+
+  function cartesianToLonLat(cartesian) {
+    var carto = Cesium.Cartographic.fromCartesian(cartesian);
+    if (!carto) return null;
+    return [Cesium.Math.toDegrees(carto.longitude), Cesium.Math.toDegrees(carto.latitude)];
+  }
+
+  function pickLonLat(position) {
+    if (!viewer) return null;
+    var ray = viewer.camera.getPickRay(position);
+    if (!ray) return null;
+    var cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+    if (!cartesian) cartesian = viewer.camera.pickEllipsoid(position, viewer.scene.globe.ellipsoid);
+    return cartesian ? cartesianToLonLat(cartesian) : null;
+  }
+
+  function onLeftClick(click) {
+    var ll = pickLonLat(click.position);
+    if (!ll) return;
+    if (drawing) {
+      drawing.points.push(ll);
+      if (drawing.mode === "rect" && drawing.points.length === 2) { finishDrawing(); return; }
+      // Tell the user where they are in the gesture instead of leaving them
+      // guessing whether the click registered.
+      notice(drawing.mode === "rect"
+        ? "Corner 1 set — click the opposite corner."
+        : "Corner " + drawing.points.length + " set — double-click to finish.");
+      drawPreview();
+      return;
+    }
+    event("click", { lat: ll[1], lon: ll[0] });
+  }
+
+  function onDoubleClick() {
+    if (drawing && drawing.points.length >= 3) finishDrawing();
+  }
+
+  function onMouseMove(move) {
+    if (!drawing || drawing.points.length === 0) return;
+    var ll = pickLonLat(move.endPosition);
+    if (!ll) return;
+    var pts = drawing.points.concat([ll]);
+    drawPreview(pts);
+  }
+
+  function drawPreview(pts) {
+    if (!viewer) return;
+    var ring = previewRing(pts || drawing.points);
+    if (!ring) return;
+    if (preview) viewer.entities.remove(preview);
+    preview = viewer.entities.add({
+      polygon: {
+        hierarchy: Cesium.Cartesian3.fromDegreesArray(ring),
+        material: new Cesium.Color(0.85, 0.45, 0.13, 0.15),
+        outline: true, outlineColor: Cesium.Color.fromCssColorString("#ea580c"),
+        outlineWidth: 2,
+      },
+    });
+    requestRender();
+  }
+
+  function previewRing(pts) {
+    if (!pts || pts.length < 2) return null;
+    var ring;
+    if (drawing.mode === "rect" && pts.length >= 2) {
+      var a = pts[0], b = pts[pts.length - 1];
+      ring = [[a[0], a[1]], [b[0], a[1]], [b[0], b[1]], [a[0], b[1]]];
+    } else {
+      ring = pts.slice();
+      if (ring.length >= 3) ring.push(ring[0].slice());
+    }
+    var flat = [];
+    ring.forEach(function (p) { flat.push(p[0], p[1]); });
+    return flat;
+  }
+
+  function finishDrawing() {
+    var pts = drawing.points.slice();
+    var ring = drawing.mode === "rect"
+      ? [[pts[0][0], pts[0][1]], [pts[1][0], pts[0][1]], [pts[1][0], pts[1][1]], [pts[0][0], pts[1][1]]]
+      : pts.slice();
+    if (ring.length >= 3) {
+      var first = ring[0], last = ring[ring.length - 1];
+      if (first[0] !== last[0] || first[1] !== last[1]) ring.push([first[0], first[1]]);
+      var feature = {
+        type: "Feature",
+        properties: { source: "globe" },
+        geometry: { type: "Polygon", coordinates: [ring] },
+      };
+      event("roi", { feature: feature });
+    }
+    clearDrawing();
+  }
+
+  // ---- camera control from the app -------------------------------------- //
+  function flyTo(lat, lon, height, animate) {
+    if (!viewer) return;
+    var destination = Cesium.Cartesian3.fromDegrees(lon, lat, height);
+    if (animate) {
+      viewer.camera.flyTo({ destination: destination, duration: 1.6 });
+    } else {
+      viewer.camera.setView({ destination: destination });
+    }
+    requestRender();
+  }
+
+  function heightForZoom(zoom) {
+    // Leaflet zoom -> a camera height that frames roughly the same area.
+    var z = Math.max(0, Math.min(18, zoom || 2));
+    return 3.8e7 / Math.pow(2, z);
+  }
+
+  // ===================================================================== //
+  // 2. fallback: the same imagery on an orthographic globe drawn in 2D.
+  //    Used only when the 3D engine cannot load (offline / blocked CDN /
+  //    no WebGL). It renders a real sphere, but hosts no overlays: the app
+  //    is told, and offers the flat detail map for that.
+  // ===================================================================== //
+  var fb = { ready: false, lat0: 20, lon0: 10, scale: 1, tex: null, ctx: null,
+             canvas: null, buf: null, buf32: null, drag: null, sr: 0, sg: 0, sb: 0 };
+
+  function initFallback(reason) {
+    stage.classList.add("fallback");
+    fb.canvas = document.getElementById("fallback");
+    fb.ctx = fb.canvas.getContext("2d");
+    layoutFallback();
+    notice(reason + " Showing a 2D-rendered globe; use “2D map” for overlays and drawing.");
+    event("unavailable", { reason: reason });
+    loadTexture();
+    paintFallback();
+    fb.canvas.onmousedown = function (e) { fb.drag = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener("mousemove", function (e) {
+      if (!fb.drag) return;
+      var R = fbR();
+      fb.lon0 -= ((e.clientX - fb.drag.x) / R) * 90;
+      fb.lat0 += ((e.clientY - fb.drag.y) / R) * 90;
+      fb.lat0 = Math.max(-89, Math.min(89, fb.lat0));
+      fb.drag = { x: e.clientX, y: e.clientY };
+      paintFallback();
+    });
+    window.addEventListener("mouseup", function (e) {
+      if (!fb.drag) return;
+      var moved = Math.abs(e.clientX - fb.drag.x) + Math.abs(e.clientY - fb.drag.y);
+      fb.drag = null;
+      if (moved > 4) return;
+      var rect = fb.canvas.getBoundingClientRect();
+      var ll = unprojectFallback(e.clientX - rect.left, e.clientY - rect.top);
+      if (ll) event("click", { lat: ll.lat, lon: ll.lon });
+    });
+    fb.ready = true;
+  }
+
+  function layoutFallback() {
+    var rect = stage.getBoundingClientRect();
+    var w = Math.max(200, Math.round(rect.width)), h = Math.max(200, Math.round(rect.height));
+    fb.canvas.style.width = w + "px"; fb.canvas.style.height = h + "px";
+    fb.canvas.width = w; fb.canvas.height = h;
+    fb.buf = fb.ctx.createImageData(w, h);
+    fb.buf32 = new Uint32Array(fb.buf.data.buffer);
+  }
+  function fbR() { return Math.min(fb.canvas.width, fb.canvas.height) / 2 * 0.92 * fb.scale; }
+
+  function loadTexture() {
+    var z = 2, n = 1 << z;
+    var c = document.createElement("canvas");
+    c.width = c.height = 256 * n;
+    var cx = c.getContext("2d");
+    var total = n * n, done = 0, loaded = 0;
+    var images = [];
+    function finish() {
+      if (++done < total) return;
+      var data = loaded ? cx.getImageData(0, 0, 256 * n, 256 * n).data : null;
+      for (var i = 0; i < images.length; i++) { images[i].onload = images[i].onerror = null; images[i].src = ""; }
+      fb.tex = { w: 256 * n, data: data };
+      paintFallback();
+    }
+    for (var x = 0; x < n; x++) for (var y = 0; y < n; y++) (function (tx, ty) {
+      var img = new Image();
+      images.push(img);
+      img.onload = function () { try { cx.drawImage(img, tx * 256, ty * 256); loaded++; } catch (e) {} finish(); };
+      img.onerror = function () { finish(); };
+      img.src = "/satquery-tiles/" + (args.base || "satellite") + "/" + z + "/" + tx + "/" + ty + ".png";
+    })(x, y);
+  }
+
+  function sampleFallback(lat, lon) {
+    var t = fb.tex;
+    if (!t || !t.data) return false;
+    var la = Math.max(-85.05112878, Math.min(85.05112878, lat));
+    var mx = (lon + 180) / 360;
+    var s = Math.sin(la * Math.PI / 180);
+    var my = 0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI);
+    var px = Math.max(0, Math.min(t.w - 1, (mx * t.w) | 0));
+    var py = Math.max(0, Math.min(t.w - 1, (my * t.w) | 0));
+    var i = (py * t.w + px) * 4;
+    fb.sr = t.data[i]; fb.sg = t.data[i + 1]; fb.sb = t.data[i + 2];
+    return true;
+  }
+
+  function unprojectFallback(px, py) {
+    var cx = fb.canvas.width / 2, cy = fb.canvas.height / 2, R = fbR();
+    var u = (px - cx) / R, v = (cy - py) / R, r2 = u * u + v * v;
+    if (r2 > 1) return null;
+    if (r2 < 1e-12) return { lat: fb.lat0, lon: fb.lon0 };
+    var RAD = Math.PI / 180, rho = Math.sqrt(r2), c = Math.asin(Math.min(1, rho));
+    var sc = Math.sin(c), cc = Math.cos(c);
+    var s0 = Math.sin(fb.lat0 * RAD), c0 = Math.cos(fb.lat0 * RAD);
+    var lat = Math.asin(Math.max(-1, Math.min(1, cc * s0 + (v * sc * c0) / rho))) / RAD;
+    var lon = fb.lon0 + Math.atan2(u * sc, rho * cc * c0 - v * sc * s0) / RAD;
+    return { lat: lat, lon: lon };
+  }
+
+  function paintFallback() {
+    if (!fb.ready || !fb.buf) return;
+    var w = fb.canvas.width, h = fb.canvas.height, R = fbR();
+    var cx = w / 2, cy = h / 2, RAD = Math.PI / 180;
+    var s0 = Math.sin(fb.lat0 * RAD), c0 = Math.cos(fb.lat0 * RAD);
+    fb.buf32.fill(0);
+    for (var py = Math.max(0, Math.floor(cy - R)); py < Math.min(h, Math.ceil(cy + R)); py++) {
+      var v = (cy - py) / R, v2 = v * v, row = py * w;
+      for (var px = Math.max(0, Math.floor(cx - R)); px < Math.min(w, Math.ceil(cx + R)); px++) {
+        var u = (px - cx) / R, r2 = u * u + v2;
+        if (r2 > 1) continue;
+        var rho = Math.sqrt(r2), lat, lon;
+        if (rho < 1e-6) { lat = fb.lat0; lon = fb.lon0; }
+        else {
+          var c = Math.asin(Math.min(1, rho)), sc = Math.sin(c), cc = Math.cos(c);
+          var sl = cc * s0 + (v * sc * c0) / rho;
+          lat = Math.asin(Math.max(-1, Math.min(1, sl))) / RAD;
+          lon = fb.lon0 + Math.atan2(u * sc, rho * cc * c0 - v * sc * s0) / RAD;
+        }
+        var r, g, b;
+        if (sampleFallback(lat, lon)) { r = fb.sr; g = fb.sg; b = fb.sb; }
+        else { r = 26; g = 42; b = 66; }
+        var shade = 0.55 + 0.45 * Math.sqrt(1 - r2);
+        fb.buf32[row + px] = (255 << 24) | ((b * shade | 0) << 16) | ((g * shade | 0) << 8) | (r * shade | 0);
+      }
+    }
+    fb.ctx.putImageData(fb.buf, 0, 0);
+    readout.textContent = Math.abs(fb.lat0).toFixed(3) + "°" + (fb.lat0 >= 0 ? "N" : "S") + "  "
+      + Math.abs(fb.lon0).toFixed(3) + "°" + (fb.lon0 >= 0 ? "E" : "W") + "  ·  2D globe";
+  }
+
+  // ===================================================================== //
+  // 3. args -> map
+  // ===================================================================== //
+  function applyArgs(next) {
+    args = next || {};
+    var h = args.height_px || 600;
+    stage.style.height = h + "px";
+    document.getElementById("hint").textContent =
+      "Drag to rotate · scroll to zoom · click a point to move the map";
+
+    if (!viewer && !fb.ready) {
+      if (CESIUM_VERSION_OK) {
+        try { initCesium(); }
+        catch (e) { CESIUM_VERSION_OK = false; initFallback("The 3D globe could not start."); }
+      } else {
+        initFallback("The 3D globe engine is unavailable on this network.");
+      }
+      if (viewer) { setBase(args.base || "satellite", args.attribution || ""); }
+      sendHeight();
+    }
+
+    if (viewer) {
+      if (args.base) setBase(args.base, args.attribution || "");
+      syncOverlays(args.overlays || []);
+      syncVectors();
+
+      var lat = (args.centre && isFinite(args.centre[0])) ? args.centre[0] : null;
+      var lon = (args.centre && isFinite(args.centre[1])) ? args.centre[1] : null;
+      var height = args.height_m || heightForZoom(args.zoom);
+      if (lat !== null && lon !== null) {
+        var key = lat.toFixed(4) + "," + lon.toFixed(4) + "," + Math.round(height / 1000);
+        if (key !== lastFlown) {
+          var first = lastFlown === "";
+          lastFlown = key;
+          flyTo(lat, lon, height, !first);
+        }
+      }
+    } else if (fb.ready) {
+      if (args.centre && isFinite(args.centre[0])) { fb.lat0 = args.centre[0]; fb.lon0 = args.centre[1]; }
+      layoutFallback();
+      paintFallback();
+    }
+    sendHeight();
+  }
+
+  window.addEventListener("message", function (ev) {
+    var data = ev.data;
+    if (!data || data.type !== "streamlit:render") return;
+    gotRender = true;
+    applyArgs(data.args || {});
+  });
+  window.addEventListener("resize", function () {
+    if (fb.ready) { layoutFallback(); paintFallback(); }
+    sendHeight();
+  });
+
+  // ---- go ---------------------------------------------------------------- #
+  stage.style.height = (600) + "px";
+  send("streamlit:componentReady", { apiVersion: 1 });
+  window.setTimeout(function () { send("streamlit:componentReady", { apiVersion: 1 }); sendHeight(); }, 300);
+  window.setTimeout(function () { if (!gotRender) { send("streamlit:componentReady", { apiVersion: 1 }); sendHeight(); } }, 1500);
+  sendHeight();
+})();
+</script>
+</body>
+</html>
