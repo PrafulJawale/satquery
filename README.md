@@ -310,6 +310,7 @@ Two optional paths can be overridden. See `.env.example` for the variable names 
 | ----------------------- | -------------------------- | ---------------------------------------------------- |
 | `SATQUERY_TILE_CACHE`   | `/tmp/satquery_tile_cache` | Directory where proxied map tiles are cached         |
 | `SATQUERY_EXTERNAL_DIR` | `data/external`            | Directory where fetched external datasets are cached |
+| `SATQUERY_SESSION_DIR`  | `sessions`                 | Directory where session files, checkpoints and archives are stored |
 
 ## Tests and verification
 

@@ -26,7 +26,9 @@ from analyses.evidence import (UNAVAILABLE, condition_rows,
 from analyses.evidence_masks import evidence_masks
 
 __all__ = ["render_evidence", "evidence_layer_choice",
-           "evidence_layer_colour", "web_evidence_mask"]
+           "evidence_layer_colour", "web_evidence_mask",
+           "render_evidence_explorer", "render_provenance_timeline",
+           "render_evidence_comparison", "export_evidence_report"]
 
 #: Intents whose answer is a COMPOSED geographic condition. For these the
 #: causal/evidence boundary is printed in the open, not inside an expander.
@@ -253,3 +255,529 @@ def web_evidence_mask(state: Any, inside: Any, transform_tuple: Tuple[float, ...
     rgba[codes == 1] = (120, 120, 120, 70)     # measured, not matching
     rgba[~valid] = (0, 0, 0, 0)                # never analysed
     return rgba, web.leaflet_bounds
+
+
+# =========================================================================== #
+# Step 8: Enhanced Evidence & Provenance UX
+# =========================================================================== #
+
+def render_evidence_explorer(package: Any, key: str = "evidence_explorer") -> None:
+    """Interactive evidence exploration with filtering/grouping.
+
+    Allows filtering evidence records by condition type, date, layer, source.
+    Only shows filters for metadata that is actually present in the package.
+    Filtering affects presentation only, not the underlying analysis result.
+    """
+    if not package.records and not package.statistics:
+        st.caption("No evidence records to explore.")
+        return
+
+    st.markdown("**Evidence Explorer**")
+    st.caption("Filter and explore the evidence records that produced this answer.")
+
+    # Collect all records for filtering
+    all_records = list(package.records) + list(package.statistics)
+    if package.combined:
+        all_records = [package.combined] + all_records
+
+    # Determine available filter dimensions from actual data
+    kinds = sorted(set(r.kind for r in all_records))
+    has_dates = any(r.source_dates for r in all_records)
+    has_bands = any(r.band_or_index for r in all_records)
+    has_sources = any(r.source_dataset and r.source_dataset != UNAVAILABLE for r in all_records)
+    has_conditions = any(r.condition for r in all_records)
+
+    # Filter controls
+    filter_cols = st.columns(4)
+    filters = {}
+
+    with filter_cols[0]:
+        if kinds:
+            selected_kinds = st.multiselect(
+                "Kind",
+                options=kinds,
+                default=kinds,
+                key=f"{key}_kind_filter"
+            )
+            filters["kind"] = selected_kinds
+
+    with filter_cols[1]:
+        if has_conditions:
+            conditions = sorted(set(r.condition for r in all_records if r.condition))
+            selected_conditions = st.multiselect(
+                "Condition",
+                options=conditions,
+                default=conditions,
+                key=f"{key}_condition_filter"
+            )
+            filters["condition"] = selected_conditions
+
+    with filter_cols[2]:
+        if has_bands:
+            bands = sorted(set(r.band_or_index for r in all_records if r.band_or_index))
+            selected_bands = st.multiselect(
+                "Band / Index",
+                options=bands,
+                default=bands,
+                key=f"{key}_band_filter"
+            )
+            filters["band"] = selected_bands
+
+    with filter_cols[3]:
+        if has_sources:
+            sources = sorted(set(r.source_dataset for r in all_records
+                               if r.source_dataset and r.source_dataset != UNAVAILABLE))
+            selected_sources = st.multiselect(
+                "Source",
+                options=sources,
+                default=sources,
+                key=f"{key}_source_filter"
+            )
+            filters["source"] = selected_sources
+
+    # Apply filters
+    filtered_records = all_records
+    if filters.get("kind"):
+        filtered_records = [r for r in filtered_records if r.kind in filters["kind"]]
+    if filters.get("condition"):
+        filtered_records = [r for r in filtered_records if r.condition in filters["condition"]]
+    if filters.get("band"):
+        filtered_records = [r for r in filtered_records if r.band_or_index in filters["band"]]
+    if filters.get("source"):
+        filtered_records = [r for r in filtered_records
+                          if r.source_dataset in filters["source"]]
+
+    st.caption(f"Showing {len(filtered_records)} of {len(all_records)} records")
+
+    # Grouping selector
+    group_by = st.selectbox(
+        "Group by",
+        options=["None", "Kind", "Condition", "Band/Index", "Source"],
+        index=0,
+        key=f"{key}_group_by"
+    )
+
+    # Display records
+    if group_by == "None":
+        _render_record_list(filtered_records, key)
+    else:
+        _render_grouped_records(filtered_records, group_by.lower().replace("/", "_"), key)
+
+
+def _render_record_list(records: List[Any], key: str) -> None:
+    """Render a flat list of evidence records."""
+    for i, record in enumerate(records):
+        with st.expander(f"{record.kind.title()}: {record.label}", expanded=False):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.caption(f"**Kind:** {record.kind}")
+                st.caption(f"**Label:** {record.label}")
+                if record.condition:
+                    st.caption(f"**Condition:** {record.condition}")
+                if record.band_or_index:
+                    st.caption(f"**Band/Index:** {record.band_or_index}")
+            with col2:
+                if record.source_analysis:
+                    st.caption(f"**Analysis:** {record.source_analysis}")
+                if record.source_dataset and record.source_dataset != UNAVAILABLE:
+                    st.caption(f"**Dataset:** {record.source_dataset}")
+                if record.source_dates:
+                    st.caption(f"**Dates:** {', '.join(record.source_dates)}")
+
+            # Counts
+            counts = record.counts
+            if counts:
+                st.caption(f"**Matched:** {counts.get('matched', 0):,}")
+                st.caption(f"**Not matching:** {counts.get('non_matching', 0):,}")
+                st.caption(f"**Undecided:** {counts.get('insufficient', 0):,}")
+                st.caption(f"**Total:** {counts.get('total', 0):,}")
+
+            # Provenance
+            if record.provenance:
+                with st.expander("Provenance", expanded=False):
+                    st.json(record.provenance)
+
+
+def _render_grouped_records(records: List[Any], group_by: str, key: str) -> None:
+    """Render records grouped by the specified dimension."""
+    from collections import defaultdict
+
+    groups = defaultdict(list)
+    for record in records:
+        if group_by == "kind":
+            groups[record.kind].append(record)
+        elif group_by == "condition":
+            groups[record.condition or "unavailable"].append(record)
+        elif group_by == "band":
+            groups[record.band_or_index or "unavailable"].append(record)
+        elif group_by == "source":
+            groups[record.source_dataset or UNAVAILABLE].append(record)
+
+    for group_name, group_records in sorted(groups.items()):
+        with st.expander(f"{group_by.title()}: {group_name} ({len(group_records)} records)", expanded=False):
+            _render_record_list(group_records, f"{key}_{group_by}_{group_name}")
+
+
+def render_provenance_timeline(package: Any, key: str = "provenance_timeline") -> None:
+    """Render a provenance timeline showing the logical chain of evidence.
+
+    Shows analysis components, source datasets, dates, and processing steps
+    in a logical order. When timestamps are unavailable, uses deterministic
+    logical ordering.
+    """
+    st.markdown("**Provenance Timeline**")
+    st.caption("The logical chain of evidence used to produce this answer.")
+
+    # Build timeline steps from the package
+    steps = []
+
+    # 1. Query
+    steps.append({
+        "step": 1,
+        "title": "User Query",
+        "description": package.query or UNAVAILABLE,
+        "type": "query",
+        "details": {
+            "Normalized": package.normalized_query or UNAVAILABLE,
+            "Intent": package.intent or UNAVAILABLE,
+        }
+    })
+
+    # 2. Conditions evaluated
+    if package.records:
+        for i, record in enumerate(package.records):
+            steps.append({
+                "step": len(steps) + 1,
+                "title": f"Condition: {record.label}",
+                "description": f"Kind: {record.kind}, Type: {record.condition or 'N/A'}",
+                "type": "condition",
+                "details": {
+                    "Source Analysis": record.source_analysis or UNAVAILABLE,
+                    "Source Dataset": record.source_dataset or UNAVAILABLE,
+                    "Band/Index": record.band_or_index or UNAVAILABLE,
+                    "Dates": ", ".join(record.source_dates) if record.source_dates else UNAVAILABLE,
+                    "Operator": record.operator or UNAVAILABLE,
+                    "Threshold": str(record.threshold) if record.threshold is not None else UNAVAILABLE,
+                    "Threshold Provenance": record.threshold_provenance or UNAVAILABLE,
+                    "Grid": record.grid or UNAVAILABLE,
+                    "Counts": record.counts,
+                    "Area (m²)": record.area_m2,
+                    "Fraction": record.fraction,
+                }
+            })
+
+    # 3. Combined result
+    if package.combined:
+        steps.append({
+            "step": len(steps) + 1,
+            "title": "Combined Result",
+            "description": f"Operator: {package.combined.source_analysis}",
+            "type": "combined",
+            "details": {
+                "Label": package.combined.label,
+                "Counts": package.combined.counts,
+                "Area (m²)": package.combined.area_m2,
+                "Fraction": package.combined.fraction,
+                "Expression": package.expression or UNAVAILABLE,
+            }
+        })
+
+    # 4. Statistics
+    if package.statistics:
+        for stat in package.statistics:
+            steps.append({
+                "step": len(steps) + 1,
+                "title": f"Statistics: {stat.label}",
+                "description": f"Kind: statistics",
+                "type": "statistics",
+                "details": {
+                    "Band/Index": stat.band_or_index or UNAVAILABLE,
+                    "Source Analysis": stat.source_analysis or UNAVAILABLE,
+                    "Source Dataset": stat.source_dataset or UNAVAILABLE,
+                    "Parameters": stat.parameters,
+                    "Counts": stat.counts,
+                }
+            })
+
+    # 5. Sources summary
+    if package.sources:
+        steps.append({
+            "step": len(steps) + 1,
+            "title": "Evidence Sources",
+            "description": f"{len(package.sources)} source(s) used",
+            "type": "sources",
+            "details": {
+                "Sources": [f"{s.get('analysis', '')} — {s.get('dataset', '')}"
+                          for s in package.sources]
+            }
+        })
+
+    # 6. Grid/Alignment
+    if package.grid or package.alignment:
+        steps.append({
+            "step": len(steps) + 1,
+            "title": "Grid & Alignment",
+            "description": "Analysis grid parameters",
+            "type": "grid",
+            "details": {
+                "Grid": package.grid or UNAVAILABLE,
+                "Alignment": package.alignment or UNAVAILABLE,
+            }
+        })
+
+    # 7. Limitations
+    if package.limitations:
+        steps.append({
+            "step": len(steps) + 1,
+            "title": "Limitations",
+            "description": f"{len(package.limitations)} limitation(s) noted",
+            "type": "limitations",
+            "details": {
+                "Limitations": list(package.limitations)
+            }
+        })
+
+    # Render timeline
+    for step in steps:
+        with st.expander(f"Step {step['step']}: {step['title']}", expanded=(step['step'] <= 2)):
+            st.caption(step['description'])
+            if step.get('details'):
+                for k, v in step['details'].items():
+                    if isinstance(v, (list, tuple)):
+                        st.caption(f"**{k}:**")
+                        for item in v:
+                            st.caption(f"  · {item}")
+                    elif isinstance(v, dict):
+                        st.caption(f"**{k}:**")
+                        for k2, v2 in v.items():
+                            st.caption(f"  · {k2}: {v2}")
+                    else:
+                        st.caption(f"**{k}:** {v}")
+
+
+def render_evidence_comparison(entry: Dict[str, Any],
+                               conversation_state: Optional[Any] = None,
+                               key: str = "evidence_comparison") -> None:
+    """Render visual diff/comparison for multi-turn chains.
+
+    Only appears when comparable evidence actually exists in the conversation
+    (e.g., two temporal analyses, or before/after analyses). Reuses existing
+    multi-condition/change-detection outputs.
+    """
+    package = evidence_from_entry(entry)
+    if package is None:
+        return
+
+    # Check if this result has comparable evidence
+    # Temporal analyses have before/after, spatial has before/after in multi-condition
+    has_temporal = any(r.kind == "temporal" for r in package.records)
+    has_combined = package.combined is not None
+    has_statistics = bool(package.statistics)
+
+    # Check conversation history for previous comparable results
+    comparable_entries = []
+    if conversation_state and hasattr(conversation_state, 'get_recent_turns'):
+        for turn in conversation_state.get_recent_turns(5):
+            if turn.get('tool_name') in ('temporal_compare', 'compute_ndvi', 'compute_ndwi',
+                                          'crop_suitability', 'multi_condition_query'):
+                comparable_entries.append(turn)
+
+    if not (has_temporal or has_combined or has_statistics or comparable_entries):
+        return
+
+    st.markdown("**Evidence Comparison**")
+    st.caption("Compare evidence across related analyses (when available).")
+
+    comparison_type = None
+    if has_temporal:
+        comparison_type = "temporal"
+    elif has_combined and package.records:
+        comparison_type = "conditions"
+    elif has_statistics:
+        comparison_type = "statistics"
+
+    if comparison_type == "temporal":
+        _render_temporal_comparison(package, key)
+    elif comparison_type == "conditions":
+        _render_conditions_comparison(package, key)
+    elif comparison_type == "statistics":
+        _render_statistics_comparison(package, key)
+
+    # If we have conversation history, offer to compare with previous turn
+    if comparable_entries:
+        with st.expander("Compare with previous analysis", expanded=False):
+            st.caption("Select a previous analysis to compare evidence:")
+            for i, turn in enumerate(comparable_entries):
+                if st.button(
+                    f"Compare: {turn.get('user_query', 'Previous analysis')} "
+                    f"({turn.get('tool_name', 'unknown')})",
+                    key=f"{key}_compare_{i}"
+                ):
+                    # Store comparison target in session state
+                    st.session_state[f"{key}_compare_target"] = turn
+                    st.rerun()
+
+
+def _render_temporal_comparison(package: Any, key: str) -> None:
+    """Render before/after comparison for temporal analyses."""
+    temporal_records = [r for r in package.records if r.kind == "temporal"]
+    if not temporal_records:
+        return
+
+    st.markdown("**Temporal Comparison (Before → After)**")
+
+    # Build comparison data
+    classes = ["increase", "stable", "decrease", "insufficient"]
+    for cls in classes:
+        record = next((r for r in temporal_records if r.condition == cls), None)
+        if record:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.caption(f"**{cls.title()}**")
+            with col2:
+                st.caption(f"Matched: {record.matched:,}")
+            with col3:
+                st.caption(f"Fraction: {record.fraction:.1%}" if record.fraction else "N/A")
+
+
+def _render_conditions_comparison(package: Any, key: str) -> None:
+    """Render comparison across multiple conditions."""
+    st.markdown("**Condition-by-Condition Comparison**")
+
+    rows = []
+    for record in package.records:
+        rows.append({
+            "Condition": record.label,
+            "Kind": record.kind,
+            "Matched": f"{record.matched:,}",
+            "Not Matching": f"{record.non_matching:,}",
+            "Undecided": f"{record.unknown:,}",
+            "Fraction": f"{record.fraction:.1%}" if record.fraction else "N/A",
+        })
+
+    if rows:
+        st.markdown(_table(
+            ("Condition", "Kind", "Matched", "Not Matching", "Undecided", "Fraction"),
+            [[r["Condition"], r["Kind"], r["Matched"], r["Not Matching"],
+              r["Undecided"], r["Fraction"]] for r in rows],
+        ))
+
+
+def _render_statistics_comparison(package: Any, key: str) -> None:
+    """Render statistics comparison."""
+    if not package.statistics:
+        return
+
+    st.markdown("**Statistics Comparison**")
+
+    for stat in package.statistics:
+        params = stat.parameters
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.caption(f"**{stat.band_or_index.upper()}**")
+        with col2:
+            if params.get("mean") is not None:
+                st.caption(f"Mean: {params['mean']:.4f}")
+        with col3:
+            if params.get("valid_pixels"):
+                st.caption(f"Valid cells: {params['valid_pixels']:,}")
+
+
+def export_evidence_report(entry: Dict[str, Any],
+                          conversation_state: Optional[Any] = None,
+                          key: str = "evidence_export") -> None:
+    """Export the current result with evidence and conversation context as a reproducible report.
+
+    Includes: user query, analysis/tool, result/status, structured arguments,
+    ROI availability, dates, crop, evidence items, data sources, provenance,
+    and conversation context. Never includes secrets, credentials, or large
+    raster arrays.
+    """
+    package = evidence_from_entry(entry)
+    if package is None:
+        st.caption("No evidence to export for this entry.")
+        return
+
+    # Build the report
+    report = {
+        "schema": "satquery-report/1",
+        "query": package.query,
+        "normalized_query": package.normalized_query,
+        "intent": package.intent,
+        "status": package.status,
+        "expression": package.expression,
+        "result": {
+            "status": package.status,
+            "matched_cells": package.matched_cells,
+            "non_matching_cells": package.non_matching_cells,
+            "unknown_cells": package.unknown_cells,
+            "analysed_cells": package.analysed_cells,
+            "matched_area_m2": package.matched_area_m2,
+            "unknown_handling": package.unknown_handling,
+        },
+        "evidence": {
+            "conditions": [r.to_dict() for r in package.records],
+            "combined": package.combined.to_dict() if package.combined else None,
+            "statistics": [r.to_dict() for r in package.statistics],
+            "sources": [dict(s) for s in package.sources],
+            "grid": dict(package.grid),
+            "alignment": dict(package.alignment),
+            "threshold_provenance": dict(package.threshold_provenance),
+            "limitations": list(package.limitations),
+            "boundary": package.boundary,
+            "runtime_ms": package.runtime_ms,
+        },
+        "explanation": package.explanation,
+    }
+
+    # Add conversation context if available
+    if conversation_state:
+        summary = conversation_state.get_context_summary() if hasattr(conversation_state, 'get_context_summary') else {}
+        if summary:
+            report["conversation_context"] = {
+                "recent_turns": summary.get("recent_turns", []),
+                "current_roi_available": summary.get("current_roi_available", False),
+                "current_dates": summary.get("current_dates", [None, None]),
+                "current_crop": summary.get("current_crop"),
+                "current_intent": summary.get("current_intent"),
+            }
+
+    # Remove unavailable/empty fields for cleaner export
+    report = _clean_report(report)
+
+    # Generate filename
+    intent = str(package.intent or "unknown").lower()
+    entry_id = entry.get('_id', 0)
+    filename = f"satquery_report_{intent}_{entry_id}.json"
+
+    st.download_button(
+        "Export Reproducible Report (JSON)",
+        data=json.dumps(report, indent=2, sort_keys=True).encode("utf-8"),
+        file_name=filename,
+        mime="application/json",
+        width="stretch",
+        key=f"{key}_report_{entry.get('_id', 0)}",
+        help="Download a reproducible report including the query, analysis, evidence, "
+             "provenance, and conversation context. No secrets or large arrays included.",
+    )
+
+
+def _clean_report(obj: Any) -> Any:
+    """Recursively remove UNAVAILABLE and empty fields from report."""
+    if obj is None or obj == UNAVAILABLE:
+        return None
+    if isinstance(obj, dict):
+        cleaned = {}
+        for k, v in obj.items():
+            cv = _clean_report(v)
+            if cv is not None and cv != {} and cv != [] and cv != "":
+                cleaned[k] = cv
+        return cleaned
+    if isinstance(obj, (list, tuple)):
+        cleaned = [_clean_report(v) for v in obj]
+        return [v for v in cleaned if v is not None and v != {} and v != [] and v != ""]
+    return obj
+
+
+# Import json at module level for export function
+import json

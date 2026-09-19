@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import base64
 import sys
+from datetime import datetime
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent
@@ -62,6 +63,37 @@ from analyses import (
     route,
     suggestions,
 )
+from analyses.evidence import evidence_from_entry
+from core.planner import (
+    MockLLMProvider,
+    LLMPlanner,
+    execute_with_fallback,
+    ToolResult,
+    ConversationState,
+)
+from core.session import (
+    build_session_from_app_state,
+    load_session_from_file,
+    save_session_to_file,
+    apply_session_to_conversation_state,
+    get_session_summary,
+    Session,
+    # Step 11: Session Organization & Discovery
+    SessionListEntry,
+    SessionFilter,
+    list_sessions,
+    filter_sessions,
+    search_sessions,
+    archive_session,
+    delete_session,
+    list_archived_sessions,
+    restore_archived_session,
+    create_checkpoint,
+    list_checkpoints,
+    load_checkpoint,
+    delete_checkpoint,
+)
+from core.llm_provider import create_provider_from_env
 from core.geometry import GeometryError
 from core.statistics import calculate_roi_ndvi_stats, roi_pixel_mask
 from core.indices import classify_ndvi, ndvi_from_dataset
@@ -100,8 +132,12 @@ from ui.map import (BASEMAPS, DEFAULT_BASEMAP, WORLD_CENTRE, WORLD_ZOOM,
                     spatial_legend_html, spatial_rgba, suitability_legend_html,
                     suitability_rgba)
 from ui.evidence_panel import (evidence_layer_choice,
-                              evidence_layer_colour, render_evidence,
-                              web_evidence_mask)
+                               evidence_layer_colour, render_evidence,
+                               web_evidence_mask,
+                               render_evidence_explorer,
+                               render_provenance_timeline,
+                               render_evidence_comparison,
+                               export_evidence_report)
 from ui.components import (
     band_options,
     render_band_inspector,
@@ -132,6 +168,8 @@ from ui.components import (
     render_roi_panel,
     render_spatial_table,
     render_warnings,
+    render_conversation_context,
+    render_clarification,
 )
 
 _MARK_PATH = str(Path(__file__).resolve().parent / "assets" / "satquery_mark.svg")
@@ -2039,6 +2077,22 @@ analysis_context = AnalysisContext(
     index_context=index_ctx,          # Phase 11: source + resolved band roles
 )
 
+# Step 3: LLM Planner boundary with real provider when configured
+# Try to create real provider from environment; fall back to MockLLMProvider
+_planner_provider = create_provider_from_env() or MockLLMProvider()
+
+# Step 5: Conversation state for multi-turn context
+if "conversation_state" not in st.session_state:
+    st.session_state["conversation_state"] = ConversationState()
+conversation_state = st.session_state["conversation_state"]
+
+_planner = LLMPlanner(
+    _planner_provider,
+    analysis_context,
+    fallback_to_deterministic=True,
+    conversation_state=conversation_state
+)
+
 _history = st.session_state.get("chat_history", [])
 if not _history:
     # First screen: what this product does, and how to begin. The examples come
@@ -2048,14 +2102,584 @@ else:
     st.caption("Supported questions: " + " · ".join(f"_{q}_" for q in suggestions()))
 
 query = render_ask_satquery()
+
+# Step 7: Show conversation context indicator (if any)
+# Determine what context was inherited for this query
+inherited_context = None
+if conversation_state and query:
+    # Resolve references to see what would be inherited
+    _, inherited_args = conversation_state.resolve_references(query)
+    if inherited_args:
+        inherited_context = inherited_args
+
+# Render conversation context indicator
+render_conversation_context(conversation_state, analysis_context, inherited_context)
+
+# Step 9: Session Persistence UI
+st.markdown("---")
+col_save, col_load, col_clear = st.columns([1, 1, 1])
+
+with col_save:
+    if st.button("Save Session", key="save_session_btn", use_container_width=True):
+        session = build_session_from_app_state(
+            conversation_state=conversation_state,
+            chat_history=st.session_state.get("chat_history", []),
+            current_raster=info,
+            current_roi=current_roi if (current_roi is not None and current_roi.usable) else None,
+            current_arguments=entry.get("current_arguments") if 'entry' in locals() else None,
+            evidence_package=evidence_from_entry(st.session_state.get("chat_history", [])[-1]).to_dict() if st.session_state.get("chat_history") else None,
+        )
+        save_session_to_file(session, f"satquery_session_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+        st.success("Session saved!")
+
+with col_load:
+    uploaded_file = st.file_uploader("Load Session", type=["json"], key="load_session_uploader")
+    if uploaded_file is not None:
+        try:
+            session = load_session_from_file(uploaded_file)
+            is_valid, errors = session.validate()
+            if not is_valid:
+                st.error(f"Invalid session: {', '.join(errors)}")
+            else:
+                # Apply session to conversation state
+                apply_session_to_conversation_state(session, conversation_state)
+                # Note: The authoritative raster/ROI must be reloaded by the user
+                st.session_state["_session_restored"] = True
+                st.success("Session loaded! Raster/ROI must be reloaded for new analysis.")
+                st.rerun()
+        except Exception as e:
+            st.error(f"Failed to load session: {e}")
+
+with col_clear:
+    if st.button("Clear Session", key="clear_session_btn", use_container_width=True):
+        conversation_state.clear()
+        st.session_state["chat_history"] = []
+        st.session_state["conversation_state"] = ConversationState()
+        st.success("Session cleared!")
+        st.rerun()
+
+# Show session restore notice
+if st.session_state.get("_session_restored"):
+    st.info("Session context restored. The authoritative raster and ROI must be re-selected before running new analyses.")
+    st.session_state["_session_restored"] = False
+
+# --- Step 10: Session Management Helper Functions ---
+
+def _render_session_comparison() -> None:
+    """Render session comparison UI."""
+    st.markdown("**Compare Two Sessions**")
+
+    col_a, col_b = st.columns(2)
+
+    with col_a:
+        st.markdown("**Session A**")
+        file_a = st.file_uploader("Session A file", type=["json"], key="compare_session_a")
+
+    with col_b:
+        st.markdown("**Session B**")
+        file_b = st.file_uploader("Session B file", type=["json"], key="compare_session_b")
+
+    if file_a and file_b:
+        try:
+            session_a = load_session_from_file(file_a)
+            session_b = load_session_from_file(file_b)
+
+            is_valid_a, errors_a = session_a.validate()
+            is_valid_b, errors_b = session_b.validate()
+
+            if not is_valid_a:
+                st.error(f"Session A invalid: {', '.join(errors_a)}")
+            if not is_valid_b:
+                st.error(f"Session B invalid: {', '.join(errors_b)}")
+
+            if is_valid_a and is_valid_b:
+                diff = session_a.diff(session_b)
+                summary = session_a.get_comparison_summary(session_b)
+
+                st.markdown("**Comparison Summary**")
+
+                # Show summary metrics
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Added", summary["summary"]["added"])
+                with col2:
+                    st.metric("Removed", summary["summary"]["removed"])
+                with col3:
+                    st.metric("Changed", summary["summary"]["changed"])
+                with col4:
+                    st.metric("Unchanged", summary["summary"]["unchanged"])
+
+                # Show detailed changes
+                if summary["metadata_changed"]:
+                    st.warning("Metadata changed")
+                if summary["conversation_changed"]:
+                    st.warning("Conversation changed")
+                if summary["evidence_changed"]:
+                    st.warning("Evidence changed")
+                if summary["raster_changed"]:
+                    st.warning("Raster context changed")
+                if summary["roi_changed"]:
+                    st.warning("ROI changed")
+                if summary["title_changed"]:
+                    st.warning("Title changed")
+                if summary["tags_changed"]:
+                    st.warning("Tags changed")
+
+                # Show detailed diff
+                with st.expander("Detailed Diff", expanded=False):
+                    if diff["unchanged"]:
+                        st.markdown("**Unchanged**")
+                        for k, v in diff["unchanged"].items():
+                            st.caption(f"  {k}: {v}")
+
+                    if diff["added"]:
+                        st.markdown("**Added**")
+                        for k, v in diff["added"].items():
+                            st.caption(f"  + {k}: {v}")
+
+                    if diff["removed"]:
+                        st.markdown("**Removed**")
+                        for k, v in diff["removed"].items():
+                            st.caption(f"  - {k}: {v}")
+
+                    if diff["changed"]:
+                        st.markdown("**Changed**")
+                        for k, v in diff["changed"].items():
+                            st.caption(f"  ~ {k}: {v['from']} → {v['to']}")
+
+                    if diff["unavailable"]:
+                        st.markdown("**Unavailable in Both**")
+                        for k in diff["unavailable"].keys():
+                            st.caption(f"  ? {k}")
+
+        except Exception as e:
+            st.error(f"Comparison failed: {e}")
+
+
+def _render_session_forking(conversation_state: ConversationState) -> None:
+    """Render session forking UI."""
+    st.markdown("**Fork Current Session**")
+
+    # Build current session
+    session = build_session_from_app_state(
+        conversation_state=conversation_state,
+        chat_history=st.session_state.get("chat_history", []),
+        current_raster=info,
+        current_roi=current_roi if (current_roi is not None and current_roi.usable) else None,
+    )
+
+    new_title = st.text_input("Fork title (optional)", placeholder="e.g., 'NDVI Analysis - Variant B'")
+
+    if st.button("Fork Session", use_container_width=True):
+        forked = session.fork(new_title or "")
+
+        # Save the fork
+        save_session_to_file(forked, f"satquery_session_{forked.session_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+
+        st.success(f"Session forked! New session ID: {forked.session_id}")
+        st.info("Forked session saved. Note: Authoritative raster/ROI must be re-selected for new analysis.")
+
+        # Offer to load the fork
+        if st.button("Load Forked Session", use_container_width=True):
+            apply_session_to_conversation_state(forked, conversation_state)
+            st.session_state["_session_restored"] = True
+            st.rerun()
+
+
+def _render_session_metadata(conversation_state: ConversationState) -> None:
+    """Render session metadata editing UI."""
+    st.markdown("**Session Title, Description & Tags**")
+
+    # Build current session
+    session = build_session_from_app_state(
+        conversation_state=conversation_state,
+        chat_history=st.session_state.get("chat_history", []),
+        current_raster=info,
+        current_roi=current_roi if (current_roi is not None and current_roi.usable) else None,
+    )
+
+    # Title
+    new_title = st.text_input("Title", value=session.metadata.title or "", placeholder="e.g., 'Pune Flood Analysis'")
+
+    # Description
+    new_description = st.text_area("Description", value=session.metadata.description or "", placeholder="Describe this analysis session...")
+
+    # Tags
+    tags_input = st.text_input("Tags (comma-separated)", value=", ".join(session.metadata.tags) if session.metadata.tags else "", placeholder="e.g., flood, temporal, sentinel-2")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Update Metadata", use_container_width=True):
+            session.update_metadata(
+                title=new_title or None,
+                description=new_description or None,
+                tags=[t.strip() for t in tags_input.split(",") if t.strip()] if tags_input else None,
+            )
+            # Save updated session
+            save_session_to_file(session, f"satquery_session_{session.session_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+            st.success("Metadata updated and session saved!")
+
+    with col2:
+        if st.button("Add Annotation", use_container_width=True):
+            annotation_text = st.text_input("Annotation", key="new_annotation")
+            if annotation_text:
+                session.add_annotation(annotation_text, author="User")
+                save_session_to_file(session, f"satquery_session_{session.session_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+                st.success("Annotation added!")
+                st.rerun()
+
+    # Show existing annotations
+    if session.metadata.annotations:
+        st.markdown("**Annotations**")
+        for ann in session.metadata.annotations:
+            st.caption(f"📝 {ann.text} — *{ann.author}* ({ann.timestamp})")
+
+    # Show session info
+    st.markdown("---")
+    st.markdown("**Session Info**")
+    st.caption(f"Session ID: {session.session_id}")
+    st.caption(f"Created: {session.metadata.created_at}")
+    st.caption(f"Updated: {session.metadata.updated_at}")
+    if session.metadata.parent_session_id:
+        st.caption(f"Forked from: {session.metadata.parent_session_id}")
+    if session.metadata.forked_at:
+        st.caption(f"Forked at: {session.metadata.forked_at}")
+
+
+def _render_session_templates() -> None:
+    """Render session templates UI."""
+    st.markdown("**Start New Analysis from Template**")
+
+    templates = Session.get_templates()
+
+    # Display templates in a grid
+    cols = st.columns(3)
+    for i, (key, template) in enumerate(templates.items()):
+        with cols[i % 3]:
+            with st.container(border=True):
+                st.markdown(f"**{template['title']}**")
+                st.caption(template['description'])
+                st.caption(f"Tags: {', '.join(template['tags'])}")
+                st.caption(f"Expected: {template['expected_intent']}")
+                st.caption(f"Required: {', '.join(template['required_inputs'])}")
+
+                if st.button(f"Start {template['title']}", key=f"template_{key}", use_container_width=True):
+                    # Create new session from template
+                    new_session = Session.from_template(key)
+
+                    # Apply to conversation state
+                    apply_session_to_conversation_state(new_session, conversation_state)
+
+                    st.success(f"Template '{template['title']}' loaded!")
+                    st.info(f"Expected analysis: {template['expected_intent']}")
+                    st.info(f"Required inputs: {', '.join(template['required_inputs'])}")
+                    st.rerun()
+
+
+# Step 10: Session Management (Comparison, Forking, Tagging, Templates)
+st.markdown("---")
+st.subheader("Session Management")
+
+# Session comparison
+with st.expander("Compare Sessions", expanded=False):
+    _render_session_comparison()
+
+# Session forking
+with st.expander("Fork Session", expanded=False):
+    _render_session_forking(conversation_state)
+
+# Session tagging and metadata
+with st.expander("Session Metadata", expanded=False):
+    _render_session_metadata(conversation_state)
+
+# Session templates
+with st.expander("Start from Template", expanded=False):
+    _render_session_templates()
+
+
+# Step 11: Session Browser & Organization
+st.markdown("---")
+st.subheader("Session Browser & Organization")
+
+def _render_session_browser(conversation_state: ConversationState) -> None:
+    """Render the session browser with discovery, filtering, search, and management."""
+    # Load all sessions
+    all_entries = list_sessions()
+
+    # Track currently loaded session
+    current_session_id = None
+    if conversation_state and hasattr(conversation_state, 'current_session_id'):
+        current_session_id = conversation_state.current_session_id
+    # Try to get from session metadata if available
+    try:
+        current_session = build_session_from_app_state(
+            conversation_state=conversation_state,
+            chat_history=st.session_state.get("chat_history", []),
+        )
+        if current_session.metadata.session_id:
+            current_session_id = current_session.metadata.session_id
+    except Exception:
+        pass
+
+    # --- Filter Controls ---
+    st.markdown("**Filters**")
+    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
+
+    with filter_col1:
+        # Collect all unique tags from sessions
+        all_tags = sorted(set(tag for entry in all_entries for tag in entry.tags))
+        selected_tags = st.multiselect("Tags (ALL must match)", all_tags, key="session_filter_tags")
+
+    with filter_col2:
+        selected_tags_any = st.multiselect("Tags (ANY can match)", all_tags, key="session_filter_tags_any")
+
+    with filter_col3:
+        # Collect all unique intents
+        all_intents = sorted(set(entry.intent for entry in all_entries if entry.intent))
+        selected_intent = st.selectbox("Intent", ["All"] + all_intents, key="session_filter_intent")
+
+    with filter_col4:
+        # Date range
+        date_from = st.date_input("Updated after", value=None, key="session_filter_date_from")
+        date_to = st.date_input("Updated before", value=None, key="session_filter_date_to")
+
+    # Search box
+    search_query = st.text_input("Search sessions", placeholder="Search title, description, tags, session ID...", key="session_search")
+
+    # Build filter criteria
+    filter_criteria = SessionFilter(
+        tags=selected_tags if selected_tags else None,
+        tag_any=selected_tags_any if selected_tags_any else None,
+        intent=selected_intent if selected_intent != "All" else None,
+        date_from=date_from.isoformat() if date_from else None,
+        date_to=date_to.isoformat() if date_to else None,
+    )
+
+    # Apply filters
+    filtered_entries = filter_sessions(all_entries, filter_criteria)
+
+    # Apply search
+    if search_query:
+        filtered_entries = search_sessions(filtered_entries, search_query)
+
+    # --- Session List ---
+    st.markdown(f"**Sessions ({len(filtered_entries)} of {len(all_entries)})**")
+
+    if not filtered_entries:
+        st.info("No sessions match the current filters.")
+    else:
+        for entry in filtered_entries:
+            is_current = entry.session_id == current_session_id
+            prefix = "▶ " if is_current else "  "
+
+            with st.container(border=True):
+                col_main, col_actions = st.columns([4, 1])
+
+                with col_main:
+                    title_display = f"{prefix}**{entry.title or '(Untitled)'}**"
+                    if is_current:
+                        title_display += " `← CURRENT`"
+                    st.markdown(title_display)
+
+                    if entry.description:
+                        st.caption(entry.description)
+
+                    # Metadata row
+                    meta_parts = []
+                    if entry.tags:
+                        meta_parts.append(f"Tags: {', '.join(entry.tags)}")
+                    if entry.intent:
+                        meta_parts.append(f"Intent: {entry.intent}")
+                    meta_parts.append(f"Updated: {entry.updated_at[:19].replace('T', ' ')}")
+                    if entry.parent_session_id:
+                        meta_parts.append(f"Forked from: {entry.parent_session_id[:8]}")
+                    st.caption(" · ".join(meta_parts))
+
+                    # Status indicators
+                    status_parts = []
+                    if entry.has_conversation:
+                        status_parts.append("💬 Conversation")
+                    if entry.has_evidence:
+                        status_parts.append("📊 Evidence")
+                    if entry.has_raster:
+                        status_parts.append("📍 Raster")
+                    if entry.has_roi:
+                        status_parts.append("🔲 ROI")
+                    if entry.num_annotations > 0:
+                        status_parts.append(f"📝 {entry.num_annotations} annotations")
+                    if entry.num_chat_entries > 0:
+                        status_parts.append(f"💭 {entry.num_chat_entries} chats")
+                    if status_parts:
+                        st.caption(" | ".join(status_parts))
+
+                with col_actions:
+                    # Load button
+                    if st.button("Load", key=f"load_session_{entry.session_id}", use_container_width=True):
+                        try:
+                            session = load_session_from_file(entry.filepath)
+                            is_valid, errors = session.validate()
+                            if not is_valid:
+                                st.error(f"Invalid session: {', '.join(errors)}")
+                            else:
+                                apply_session_to_conversation_state(session, conversation_state)
+                                st.session_state["_session_restored"] = True
+                                st.success("Session loaded! Raster/ROI must be reloaded for new analysis.")
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"Failed to load: {e}")
+
+                    # Archive button
+                    if st.button("Archive", key=f"archive_session_{entry.session_id}", use_container_width=True):
+                        success, msg = archive_session(entry.session_id)
+                        if success:
+                            st.success(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
+
+                    # Checkpoints button (shows count)
+                    checkpoints = list_checkpoints(entry.session_id)
+                    if checkpoints:
+                        if st.button(f"Checkpoints ({len(checkpoints)})", key=f"checkpoints_session_{entry.session_id}", use_container_width=True):
+                            st.session_state[f"show_checkpoints_{entry.session_id}"] = True
+                            st.rerun()
+
+                    # Show checkpoints if requested
+                    if st.session_state.get(f"show_checkpoints_{entry.session_id}"):
+                        with st.expander(f"Checkpoints for {entry.title}", expanded=True):
+                            for cp in checkpoints:
+                                cp_col1, cp_col2 = st.columns([3, 1])
+                                with cp_col1:
+                                    label_display = f"**{cp['label']}**" if cp['label'] else "*(no label)*"
+                                    st.caption(f"{label_display} — {cp['created_at'][:19].replace('T', ' ')}")
+                                with cp_col2:
+                                    if st.button("Load", key=f"load_cp_{entry.session_id}_{cp['filename']}", use_container_width=True):
+                                        checkpoint_session = load_checkpoint(entry.session_id, cp['filename'])
+                                        if checkpoint_session:
+                                            apply_session_to_conversation_state(checkpoint_session, conversation_state)
+                                            st.session_state["_session_restored"] = True
+                                            st.success("Checkpoint loaded!")
+                                            st.session_state[f"show_checkpoints_{entry.session_id}"] = False
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to load checkpoint")
+                                    if st.button("Delete", key=f"del_cp_{entry.session_id}_{cp['filename']}", use_container_width=True):
+                                        success, msg = delete_checkpoint(entry.session_id, cp['filename'])
+                                        if success:
+                                            st.success(msg)
+                                            st.rerun()
+                                        else:
+                                            st.error(msg)
+                            if st.button("Close", key=f"close_cp_{entry.session_id}", use_container_width=True):
+                                st.session_state[f"show_checkpoints_{entry.session_id}"] = False
+                                st.rerun()
+
+                    # Create checkpoint button
+                    if st.button("✓ Checkpoint", key=f"create_cp_{entry.session_id}", use_container_width=True):
+                        # Need to load the session first to create checkpoint
+                        try:
+                            session = load_session_from_file(entry.filepath)
+                            success, msg = create_checkpoint(session, label=f"manual_{datetime.now().strftime('%H%M%S')}")
+                            if success:
+                                st.success(f"Checkpoint created: {msg}")
+                            else:
+                                st.error(msg)
+                        except Exception as e:
+                            st.error(f"Failed to create checkpoint: {e}")
+
+                    # Delete button (with confirmation)
+                    if st.button("🗑 Delete", key=f"delete_session_{entry.session_id}", use_container_width=True):
+                        st.session_state[f"confirm_delete_{entry.session_id}"] = True
+                        st.rerun()
+
+                    if st.session_state.get(f"confirm_delete_{entry.session_id}"):
+                        st.warning("Delete permanently? This cannot be undone.")
+                        del_col1, del_col2 = st.columns(2)
+                        with del_col1:
+                            if st.button("Yes, delete", key=f"confirm_yes_{entry.session_id}", use_container_width=True):
+                                success, msg = delete_session(entry.session_id, confirm=True)
+                                if success:
+                                    st.success(msg)
+                                    st.session_state[f"confirm_delete_{entry.session_id}"] = False
+                                    st.rerun()
+                                else:
+                                    st.error(msg)
+                        with del_col2:
+                            if st.button("Cancel", key=f"confirm_no_{entry.session_id}", use_container_width=True):
+                                st.session_state[f"confirm_delete_{entry.session_id}"] = False
+                                st.rerun()
+
+    # --- Archived Sessions ---
+    with st.expander("Archived Sessions", expanded=False):
+        archived_entries = list_archived_sessions()
+        if not archived_entries:
+            st.caption("No archived sessions.")
+        else:
+            for entry in archived_entries:
+                with st.container(border=True):
+                    col_arch, col_restore = st.columns([4, 1])
+                    with col_arch:
+                        st.markdown(f"**{entry.title or '(Untitled)'}**")
+                        st.caption(f"Archived: {entry.updated_at[:19].replace('T', ' ')} · ID: {entry.session_id}")
+                    with col_restore:
+                        if st.button("Restore", key=f"restore_{entry.session_id}", use_container_width=True):
+                            success, msg = restore_archived_session(Path(entry.filepath).name)
+                            if success:
+                                st.success(msg)
+                                st.rerun()
+                            else:
+                                st.error(msg)
+
+
+_render_session_browser(conversation_state)
+
 if query is None and st.session_state.get("sq_pending_query"):
     # An example query was clicked: run it exactly as if it had been typed.
     query = st.session_state.pop("sq_pending_query")
 
 if query:
-    execution = route(query, analysis_context)
+    # Step 2: Execute via planner with deterministic fallback
+    tool_result, used_fallback = execute_with_fallback(
+        query, analysis_context, _planner, conversation_state
+    )
+
+    # Convert ToolResult to the format expected by the rest of the UI (similar to AnalysisExecution)
+    # We need to reconstruct an execution-like object for compatibility
+    from analyses.base import AnalysisExecution, Status, Intent
+    from core.tools import intent_to_tool_name
+
+    # Determine intent from tool_name
+    intent = Intent.UNKNOWN
+    if tool_result.tool_name != "clarification":
+        intent = intent_to_tool_name(tool_result.tool_name) or Intent.UNKNOWN
+
+    # Build a compatible execution object
+    execution = AnalysisExecution(
+        intent=intent,
+        status=Status(tool_result.status) if tool_result.status in [s.value for s in Status] else Status.ERROR,
+        query=query,
+        normalized_query=query,
+        confidence=1.0 if not used_fallback else 0.0,
+        explanation="LLM planner" if not used_fallback else "Deterministic fallback",
+        matched=(),
+        result=tool_result.result,
+        message=tool_result.message,
+        warnings=tuple(tool_result.warnings),
+        provenance=tool_result.evidence or {"engine": "planner" if not used_fallback else "fallback"},
+    )
+
+    # Handle clarification specially
+    if tool_result.status == "NEEDS_CLARIFICATION":
+        # Step 7: Use improved clarification rendering
+        # Note: Clarification turns do NOT overwrite authoritative context
+        # (ConversationState only updates on successful tool calls, not clarifications)
+        render_clarification(tool_result)
+        # Don't add to history, just show the clarification
+        st.stop()
+
     entry = execution.to_dict()
     entry["result"] = execution.result          # keep the object for the details
+    entry["_planner_fallback"] = used_fallback
 
     # The histogram is display evidence for the SAME pixels the engine measured;
     # it is derived from the native array + the same mask, never from the map.
@@ -2180,6 +2804,36 @@ for entry in st.session_state.get("chat_history", []):
         # panels above are untouched; this is added below them and reads the
         # same result object they do.
         render_evidence(entry, key=f"evidence_{entry.get('_id', 0)}")
+
+        # Step 8: Enhanced Evidence & Provenance UX
+        # Get conversation state for context-aware features
+        conv_state = st.session_state.get("conversation_state")
+
+        # Evidence Explorer with filtering
+        with st.expander("Explore Evidence", expanded=False):
+            package = evidence_from_entry(entry)
+            if package:
+                render_evidence_explorer(package, key=f"explorer_{entry.get('_id', 0)}")
+
+        # Provenance Timeline
+        with st.expander("Provenance Timeline", expanded=False):
+            package = evidence_from_entry(entry)
+            if package:
+                render_provenance_timeline(package, key=f"timeline_{entry.get('_id', 0)}")
+
+        # Evidence Comparison (for multi-turn chains)
+        with st.expander("Compare Evidence", expanded=False):
+            package = evidence_from_entry(entry)
+            if package:
+                render_evidence_comparison(entry, conversation_state=conv_state,
+                                           key=f"compare_{entry.get('_id', 0)}")
+
+        # Export Reproducible Report
+        with st.expander("Export Report", expanded=False):
+            package = evidence_from_entry(entry)
+            if package:
+                export_evidence_report(entry, conversation_state=conv_state,
+                                       key=f"export_{entry.get('_id', 0)}")
 
 st.divider()
 render_provenance(prov)

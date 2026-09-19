@@ -1721,3 +1721,172 @@ def render_multi_condition_refusal(entry: Dict[str, Any]) -> None:
         "condition is fully specified.")
     for hint in (entry.get("hints") or ()):
         st.markdown(f"- {hint}")
+
+
+# --------------------------------------------------------------------------- #
+# Step 7 -- Conversational Context Indicators
+# --------------------------------------------------------------------------- #
+
+def render_conversation_context(
+    conversation_state: Optional[Any],
+    analysis_context: Optional[Any] = None,
+    inherited_context: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Render the active conversational context indicator.
+
+    Shows a compact summary of what the system knows from the conversation.
+    Only displays information that actually exists -- no fabricated values.
+
+    Args:
+        conversation_state: The ConversationState object from core.planner
+        analysis_context: The current AnalysisContext (for authoritative ROI/dates)
+        inherited_context: Dictionary of context inherited for the current query
+                          (e.g., {"roi": True, "crop": "cotton", "dates": True})
+    """
+    if conversation_state is None:
+        return
+
+    # Get context summary from conversation state
+    summary = conversation_state.get_context_summary() if hasattr(conversation_state, 'get_context_summary') else {}
+
+    # Also check authoritative analysis context
+    has_roi = False
+    if analysis_context and hasattr(analysis_context, 'has_roi'):
+        has_roi = analysis_context.has_roi
+    elif summary.get("current_roi_available"):
+        has_roi = True
+
+    # Collect context items
+    context_items = []
+
+    # ROI status
+    if has_roi:
+        context_items.append(("ROI", "Selected"))
+
+    # Previous analysis/intent
+    prev_intent = summary.get("current_intent")
+    if prev_intent:
+        # Make it human-readable
+        label = prev_intent.replace("_", " ").title()
+        if "Crop" in label:
+            label = "Crop Suitability"
+        elif "Ndvi" in label:
+            label = "NDVI"
+        elif "Ndwi" in label:
+            label = "NDWI"
+        elif "Temporal" in label:
+            label = "Temporal Comparison"
+        elif "Spatial" in label:
+            label = "Spatial Query"
+        elif "Multi" in label:
+            label = "Multi-Condition"
+        context_items.append(("Last Analysis", label))
+
+    # Previous crop
+    prev_crop = summary.get("current_crop")
+    if prev_crop:
+        context_items.append(("Crop", prev_crop.title()))
+
+    # Previous dates
+    prev_dates = summary.get("current_dates")
+    if prev_dates and prev_dates != [None, None] and prev_dates != (None, None):
+        d1, d2 = prev_dates
+        if d1 and d2:
+            context_items.append(("Dates", f"{d1} → {d2}"))
+        elif d1:
+            context_items.append(("Date", d1))
+
+    # If nothing to show, don't render
+    if not context_items:
+        return
+
+    # Render as a compact expander
+    with st.expander("Conversation Context", expanded=False):
+        for label, value in context_items:
+            st.caption(f"**{label}:** {value}")
+
+        # Show inherited context for current query if any
+        if inherited_context:
+            inherited_items = []
+            if inherited_context.get("roi"):
+                inherited_items.append("Same area")
+            if inherited_context.get("crop"):
+                inherited_items.append(f"Same crop ({inherited_context['crop']})")
+            if inherited_context.get("date1") and inherited_context.get("date2"):
+                inherited_items.append(f"Same dates ({inherited_context['date1']} → {inherited_context['date2']})")
+
+            if inherited_items:
+                st.caption(f"🔄 Using: {', '.join(inherited_items)}")
+
+        # Clear context button
+        if st.button("Clear Conversation Context", key="clear_conv_context", type="secondary"):
+            if hasattr(conversation_state, 'clear'):
+                conversation_state.clear()
+            st.rerun()
+
+
+def render_clarification(clarification: Any) -> None:
+    """Render a clarification request clearly.
+
+    Args:
+        clarification: ClarificationRequest object or dict with 'message' and 'missing'
+    """
+    if hasattr(clarification, 'message'):
+        message = clarification.message
+        missing = getattr(clarification, 'missing', ())
+    elif isinstance(clarification, dict):
+        message = clarification.get('message', '')
+        missing = clarification.get('missing', ())
+    else:
+        message = str(clarification)
+        missing = ()
+
+    st.info(message, icon="ℹ️")
+
+    if missing:
+        st.caption("Missing: " + ", ".join(str(m).replace("_", " ") for m in missing))
+
+
+# --------------------------------------------------------------------------- #
+# Exports
+# --------------------------------------------------------------------------- #
+
+__all__ = [
+    "render_metrics",
+    "render_spatial_table",
+    "render_bands_table",
+    "render_warnings",
+    "clean_note",
+    "render_provenance",
+    "render_band_options",
+    "render_band_inspector",
+    "render_band_mapping",
+    "render_bands_table",
+    "render_composite",
+    "render_guess_banner",
+    "render_histograms",
+    "render_metrics",
+    "render_ndvi_classes",
+    "render_ndvi_figure",
+    "render_ndwi_stats",
+    "render_ndvi_change",
+    "render_ndvi_provenance",
+    "render_ndvi_stats",
+    "render_provenance",
+    "render_ask_satquery",
+    "render_answer",
+    "render_welcome",
+    "render_crop_suitability",
+    "render_multi_condition",
+    "render_spatial_query",
+    "render_unsupported_condition",
+    "render_roi_analysis",
+    "render_raw_metadata",
+    "render_reflectance_panel",
+    "render_roadmap",
+    "render_roi_panel",
+    "render_spatial_table",
+    "render_warnings",
+    "render_conversation_context",
+    "render_clarification",
+]
